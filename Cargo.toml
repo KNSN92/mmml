@@ -3,4 +3,10 @@ name = "minecraft-mod-manager-and-launcher"
 version = "0.1.0"
 edition = "2024"
 
+[workspace]
+resolve = "3"
+members = [
+    "crates/*"
+]
+
 [dependencies]

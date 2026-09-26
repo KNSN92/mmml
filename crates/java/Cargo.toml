@@ -1,0 +1,10 @@
+[package]
+name = "java"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+reqwest = "0.13.5"
+serde = "1.0.229"
+thiserror = "2.0.21"
+tokio = "1.53.1"
