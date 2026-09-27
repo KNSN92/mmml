@@ -19,7 +19,7 @@ pub enum JavaExecutionError {
 pub type JavaExecutionResult<T> = Result<T, JavaExecutionError>;
 
 pub struct ExecuteParams {
-    env: Vec<(String, String)>,
+    pub env: Vec<(String, String)>,
     //TODO: stdin, stdout, stderrを指定出来るようにする
 }
 
