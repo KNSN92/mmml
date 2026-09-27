@@ -4,37 +4,12 @@ use tempfile::{NamedTempFile, TempDir};
 use tokio::fs::{self, File};
 
 use crate::{
-    JavaDistribution, JavaDistributionError, JavaDistributionResult, JavaRuntime,
-    extract::{tar_gz_extract, zip_extract},
+    JavaDistribution, JavaDistributionError, JavaDistributionResult, JavaRuntime, arch, extract::{tar_gz_extract, zip_extract}, platform,
 };
 
 pub struct TemurinDistribution {
     path: PathBuf,
     version: u8,
-}
-
-macro_rules! platform {
-    { $first_target_os:literal => $first_value:expr, $($target_os:literal => $value:expr,)* _ => $other_value:expr } => {
-        if cfg!(target_os = $first_target_os) {
-            $first_value
-        } $( else if cfg!(target_os = $target_os) {
-            $value
-        } )* else {
-            $other_value
-        }
-    }
-}
-
-macro_rules! arch {
-    { $first_target_arch:literal => $first_value:expr, $($target_arch:literal => $value:expr,)* _ => $other_value:expr } => {
-        if cfg!(target_arch = $first_target_arch) {
-            $first_value
-        } $( else if cfg!(target_arch = $target_arch) {
-            $value
-        } )* else {
-            $other_value
-        }
-    }
 }
 
 impl TemurinDistribution {
