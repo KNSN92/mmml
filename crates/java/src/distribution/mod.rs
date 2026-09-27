@@ -4,6 +4,7 @@ use thiserror::Error;
 
 use crate::{JavaRuntime, extract::DecompressError};
 
+pub mod temurin;
 
 #[derive(Debug, Error)]
 pub enum JavaDistributionError {
