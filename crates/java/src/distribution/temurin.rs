@@ -1,20 +1,20 @@
-use std::{io::Write, path::PathBuf};
-
-use tempfile::{NamedTempFile, TempDir};
-use tokio::fs::{self, File};
+use std::path::Path;
 
 use crate::{
-    JavaDistribution, JavaDistributionError, JavaDistributionResult, JavaRuntime, arch, extract::{tar_gz_extract, zip_extract}, platform,
+    InstallableJavaDistributionBase,
+    JavaDistribution,
+    JavaDistributionError,
+    JavaDistributionResult,
+    JavaRuntime,
+    arch,
+    platform,
 };
 
-pub struct TemurinDistribution {
-    path: PathBuf,
-    version: u8,
-}
+pub struct TemurinDistribution(InstallableJavaDistributionBase);
 
 impl TemurinDistribution {
-    pub fn new(path: PathBuf, version: u8) -> Self {
-        Self { path, version }
+    pub fn new(path: impl AsRef<Path>, version: u8) -> Self {
+        Self(InstallableJavaDistributionBase { path: path.as_ref().into(), version })
     }
 }
 
@@ -25,17 +25,17 @@ impl JavaDistribution for TemurinDistribution {
 
     async fn is_installed(&self) -> JavaDistributionResult<bool> {
         let binary_path = platform! {
-            "windows" => self.path.join("./bin/java.exe"),
-            "macos" => self.path.join("./Contents/Home/bin/java"),
-            "linux" => self.path.join("./bin/java"),
+            "windows" => self.0.path.join("./bin/java.exe"),
+            "macos" => self.0.path.join("./Contents/Home/bin/java"),
+            "linux" => self.0.path.join("./bin/java"),
             _ => return Err(JavaDistributionError::UnsupportedPlatform)
         };
         Ok(binary_path.exists())
     }
 
     async fn install(&self) -> JavaDistributionResult<()> {
-        if !Self::is_version_supported(self.version) {
-            return Err(JavaDistributionError::UnsupportedVersion(self.version));
+        if !Self::is_version_supported(self.0.version) {
+            return Err(JavaDistributionError::UnsupportedVersion(self.0.version));
         }
         if self.is_installed().await? {
             return Err(JavaDistributionError::AlreadyInstalled);
@@ -56,50 +56,19 @@ impl JavaDistribution for TemurinDistribution {
         };
         let url = format!(
             "https://api.adoptium.net/v3/binary/latest/{}/ga/{}/{}/jre/hotspot/normal/eclipse?project=jdk",
-            self.version, platform, arch,
+            self.0.version, platform, arch,
         );
 
-        let mut response = reqwest::get(url).await?.error_for_status()?;
-        let mut archive_file = NamedTempFile::new()?;
-        while let Some(chunk) = response.chunk().await? {
-            archive_file.write_all(&chunk)?;
-        }
-        let extracted_dir = TempDir::new()?;
-
-        platform! {
-            "windows" => {
-                zip_extract(File::from_std(archive_file.reopen()?), &extracted_dir, None).await?;
-            },
-            "macos" => {
-                tar_gz_extract(File::from_std(archive_file.reopen()?), &extracted_dir, None).await?;
-            },
-            "linux" => {
-                tar_gz_extract(File::from_std(archive_file.reopen()?), &extracted_dir, None).await?;
-            },
-            _ => return Err(JavaDistributionError::UnsupportedPlatform)
-        }
-
-        let extracted_archive_dir = fs::read_dir(&extracted_dir)
-            .await?
-            .next_entry()
-            .await?
-            .ok_or(std::io::Error::new(
-                std::io::ErrorKind::NotFound,
-                "Extracted archive directory not found",
-            ))?
-            .path();
-        fs::rename(extracted_archive_dir, &self.path).await?;
-
-        Ok(())
+        self.0.install(url).await
     }
 
     fn runtime(&self) -> JavaDistributionResult<JavaRuntime> {
-        let binary_path = platform! {
-            "windows" => self.path.join("./bin/java.exe"),
-            "macos" => self.path.join("./Contents/Home/bin/java"),
-            "linux" => self.path.join("./bin/java"),
+        let extra_path = platform! {
+            "windows" => "./bin/java.exe",
+            "macos" => "./Contents/Home/bin/java",
+            "linux" => "./bin/java",
             _ => return Err(JavaDistributionError::UnsupportedPlatform)
         };
-        Ok(JavaRuntime::new(binary_path))
+        self.0.runtime(extra_path)
     }
 }
