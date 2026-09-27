@@ -1,6 +1,6 @@
 use std::{fs, path::PathBuf};
 
-use java::{ExecuteParams, distribution::{JavaDistribution, TemurinDistribution}};
+use java::{ExecutionParams, distribution::{JavaDistribution, TemurinDistribution}};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -15,7 +15,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         distribution.install().await?;
     }
     let java = distribution.runtime()?;
-    java.execute(cwd, vec!["HelloWorld".into()], ExecuteParams::default())
+    java.execute(cwd, vec!["HelloWorld".into()], ExecutionParams::default())
         .await?;
     Ok(())
 }

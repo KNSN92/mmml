@@ -1,6 +1,5 @@
 use std::{
-    io,
-    path::{Path, PathBuf},
+    io, path::{Path, PathBuf}, process::{Output, Stdio},
 };
 
 use thiserror::Error;
@@ -18,14 +17,26 @@ pub enum JavaExecutionError {
 
 pub type JavaExecutionResult<T> = Result<T, JavaExecutionError>;
 
-pub struct ExecuteParams {
-    pub env: Vec<(String, String)>,
-    //TODO: stdin, stdout, stderrを指定出来るようにする
+pub struct JavaExecutionOutput {
+    pub stdout: Vec<u8>,
+    pub stderr: Vec<u8>,
 }
 
-impl Default for ExecuteParams {
+pub struct ExecutionParams<I: Into<Stdio>, O: Into<Stdio>, E: Into<Stdio>> {
+    pub env: Vec<(String, String)>,
+    pub stdin: I,
+    pub stdout: O,
+    pub stderr: E,
+}
+
+impl Default for ExecutionParams<Stdio, Stdio, Stdio> {
     fn default() -> Self {
-        Self { env: Vec::new() }
+        Self {
+            env: Vec::new(),
+            stdin: Stdio::null(),
+            stdout: Stdio::piped(),
+            stderr: Stdio::piped(),
+        }
     }
 }
 
@@ -40,37 +51,43 @@ impl JavaRuntime {
         &self.0
     }
 
-    pub async fn execute(
+    pub async fn execute<I: Into<Stdio>, O: Into<Stdio>, E: Into<Stdio>>(
         &self,
         cwd: impl AsRef<Path>,
         args: Vec<String>,
-        params: ExecuteParams,
-    ) -> JavaExecutionResult<()> {
+        params: ExecutionParams<I, O, E>,
+    ) -> JavaExecutionResult<JavaExecutionOutput> {
         if !self.0.exists() {
             return Err(JavaExecutionError::NotFound(self.0.clone()));
         }
-        let status = Command::new(&self.0)
+        let Output { status, stdout, stderr } = Command::new(&self.0)
             .current_dir(cwd)
             .args(args)
             .envs(params.env)
-            .status()
+            .stdin(params.stdin)
+            .stdout(params.stdout)
+            .stderr(params.stderr)
+            .output()
             .await?;
         if !status.success() {
             return Err(JavaExecutionError::Failed(status.code()));
         }
-        Ok(())
+        Ok(JavaExecutionOutput { stdout, stderr })
     }
 
-    pub fn spawn(
+    pub fn spawn<I: Into<Stdio>, O: Into<Stdio>, E: Into<Stdio>>(
         &self,
         cwd: impl AsRef<Path>,
         args: Vec<String>,
-        params: ExecuteParams,
+        params: ExecutionParams<I, O, E>,
     ) -> JavaExecutionResult<tokio::process::Child> {
         let child = Command::new(&self.0)
             .current_dir(cwd)
             .args(args)
             .envs(params.env)
+            .stdin(params.stdin)
+            .stdout(params.stdout)
+            .stderr(params.stderr)
             .spawn()?;
         Ok(child)
     }
