@@ -21,7 +21,7 @@ pub enum JavaDistributionError {
 pub type JavaDistributionResult<T> = Result<T, JavaDistributionError>;
 
 pub trait JavaDistribution {
-    fn is_version_supported(&self, version: u8) -> bool;
-    fn install(&self, version: u8) -> JavaDistributionResult<()>;
-    fn runtime(&self, version: u8) -> JavaDistributionResult<JavaRuntime>;
+    fn is_version_supported(version: u8) -> bool;
+    async fn install(&self) -> JavaDistributionResult<()>;
+    fn runtime(&self) -> JavaDistributionResult<JavaRuntime>;
 }
