@@ -1,6 +1,6 @@
 use std::{fs, path::PathBuf};
 
-use java::{ExecuteParams, JavaDistribution, temurin::TemurinDistribution};
+use java::{ExecuteParams, distribution::{JavaDistribution, TemurinDistribution}};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {

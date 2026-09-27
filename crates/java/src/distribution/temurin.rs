@@ -1,13 +1,7 @@
 use std::path::Path;
 
 use crate::{
-    InstallableJavaDistributionBase,
-    JavaDistribution,
-    JavaDistributionError,
-    JavaDistributionResult,
-    JavaRuntime,
-    arch,
-    platform,
+    JavaRuntime, distribution::{InstallableJavaDistributionBase, JavaDistribution, JavaDistributionError, JavaDistributionResult}
 };
 
 pub struct TemurinDistribution(InstallableJavaDistributionBase);

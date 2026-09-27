@@ -4,9 +4,10 @@ use tempfile::{NamedTempFile, TempDir};
 use tokio::fs::{self, File};
 use thiserror::Error;
 
-use crate::{JavaRuntime, extract::{DecompressError, tar_gz_extract, zip_extract}, platform};
+use crate::{JavaRuntime, extract::{DecompressError, tar_gz_extract, zip_extract}};
 
-pub mod temurin;
+mod temurin;
+pub use temurin::TemurinDistribution;
 
 #[derive(Debug, Error)]
 pub enum JavaDistributionError {
@@ -35,7 +36,7 @@ pub trait JavaDistribution {
     fn runtime(&self) -> JavaDistributionResult<JavaRuntime>;
 }
 
-pub struct InstallableJavaDistributionBase {
+pub(crate) struct InstallableJavaDistributionBase {
     pub path: PathBuf,
     pub version: u8,
 }
