@@ -2,7 +2,8 @@ use std::io;
 
 use thiserror::Error;
 
-use crate::JavaRuntime;
+use crate::{JavaRuntime, extract::DecompressError};
+
 
 #[derive(Debug, Error)]
 pub enum JavaDistributionError {
@@ -14,6 +15,8 @@ pub enum JavaDistributionError {
     UnsupportedArchitecture,
     #[error("Network error: {0}")]
     NetworkError(#[from] reqwest::Error),
+    #[error("Zip decompression error: {0}")]
+    ZipDecompressionError(#[from] DecompressError),
     #[error("IO error: {0}")]
     IOError(#[from] io::Error),
 }
