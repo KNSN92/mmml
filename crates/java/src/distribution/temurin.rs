@@ -48,9 +48,22 @@ impl JavaDistribution for TemurinDistribution {
         !(version == 8 && cfg!(all(target_os = "macos", target_arch = "aarch64")))
     }
 
+    async fn is_installed(&self) -> JavaDistributionResult<bool> {
+        let binary_path = platform! {
+            "windows" => self.path.join("./bin/java.exe"),
+            "macos" => self.path.join("./Contents/Home/bin/java"),
+            "linux" => self.path.join("./bin/java"),
+            _ => return Err(JavaDistributionError::UnsupportedPlatform)
+        };
+        Ok(binary_path.exists())
+    }
+
     async fn install(&self) -> JavaDistributionResult<()> {
         if !Self::is_version_supported(self.version) {
             return Err(JavaDistributionError::UnsupportedVersion(self.version));
+        }
+        if self.is_installed().await? {
+            return Err(JavaDistributionError::AlreadyInstalled);
         }
 
         let platform = platform! {

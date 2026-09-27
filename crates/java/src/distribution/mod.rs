@@ -14,6 +14,8 @@ pub enum JavaDistributionError {
     UnsupportedPlatform,
     #[error("Unsupported Architecture")]
     UnsupportedArchitecture,
+    #[error("Java runtime already installed")]
+    AlreadyInstalled,
     #[error("Network error: {0}")]
     NetworkError(#[from] reqwest::Error),
     #[error("Zip decompression error: {0}")]
@@ -26,6 +28,7 @@ pub type JavaDistributionResult<T> = Result<T, JavaDistributionError>;
 
 pub trait JavaDistribution {
     fn is_version_supported(version: u8) -> bool;
+    fn is_installed(&self) -> impl Future<Output = JavaDistributionResult<bool>> + Send;
     fn install(&self) -> impl Future<Output = JavaDistributionResult<()>> + Send;
     fn runtime(&self) -> JavaDistributionResult<JavaRuntime>;
 }
