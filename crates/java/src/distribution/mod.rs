@@ -22,6 +22,6 @@ pub type JavaDistributionResult<T> = Result<T, JavaDistributionError>;
 
 pub trait JavaDistribution {
     fn is_version_supported(version: u8) -> bool;
-    async fn install(&self) -> JavaDistributionResult<()>;
+    fn install(&self) -> impl Future<Output = JavaDistributionResult<()>> + Send;
     fn runtime(&self) -> JavaDistributionResult<JavaRuntime>;
 }
