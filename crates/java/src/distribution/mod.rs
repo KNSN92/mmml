@@ -8,6 +8,12 @@ use crate::JavaRuntime;
 pub enum JavaDistributionError {
     #[error("Unsupported Java version: {0}")]
     UnsupportedVersion(u8),
+    #[error("Unsupported Platform")]
+    UnsupportedPlatform,
+    #[error("Unsupported Architecture")]
+    UnsupportedArchitecture,
+    #[error("Network error: {0}")]
+    NetworkError(#[from] reqwest::Error),
     #[error("IO error: {0}")]
     IOError(#[from] io::Error),
 }
