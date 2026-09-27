@@ -31,10 +31,10 @@ pub enum DecompressError {
 
 pub async fn zip_extract(
     file: impl AsyncRead + AsyncSeek + Unpin,
-    destination: impl AsRef<Path>,
+    dest: impl AsRef<Path>,
     max_size: Option<u64>,
 ) -> Result<(), DecompressError> {
-    let destination = fs::canonicalize(destination).await?;
+    let dest = fs::canonicalize(dest).await?;
     let file = BufReader::new(file);
     let mut archive = ZipFileReader::new(file.compat()).await?;
     let entries_count = archive.file().entries().len();
@@ -56,8 +56,8 @@ pub async fn zip_extract(
         if path.is_absolute() {
             return Err(DecompressError::AbsolutePath(filename.to_string()));
         }
-        let path = norm_path(&destination.join(path));
-        if !path.starts_with(&destination) {
+        let path = norm_path(&dest.join(path));
+        if !path.starts_with(&dest) {
             return Err(DecompressError::PathTraversal(
                 path.to_string_lossy().to_string(),
             ));
@@ -83,10 +83,10 @@ pub async fn zip_extract(
 
 pub async fn tar_gz_extract(
     file: impl AsyncRead + AsyncSeek + Unpin,
-    destination: impl AsRef<Path>,
+    dest: impl AsRef<Path>,
     max_size: Option<u64>,
 ) -> Result<(), DecompressError> {
-    let destination = fs::canonicalize(destination).await?;
+    let dest = fs::canonicalize(dest).await?;
     let decoder = GzipDecoder::new(BufReader::new(file));
     let mut ar = TarArchive::new(decoder);
     let mut entries = ar.entries()?;
@@ -98,7 +98,7 @@ pub async fn tar_gz_extract(
                 path.to_string_lossy().to_string(),
             ));
         }
-        let path = destination.join(&path);
+        let path = dest.join(&path);
         let entry_type = entry.header().entry_type();
         if entry_type.is_symlink() || entry_type.is_hard_link() {
             continue;
@@ -109,7 +109,7 @@ pub async fn tar_gz_extract(
                 return Err(DecompressError::SizeTooLarge(entry_size));
             }
         }
-        if !entry.unpack_in(&destination).await? {
+        if !entry.unpack_in(&dest).await? {
             return Err(DecompressError::PathTraversal(
                 path.to_string_lossy().to_string(),
             ));
