@@ -44,6 +44,11 @@ pub(crate) struct InstallableJavaDistributionBase {
 impl InstallableJavaDistributionBase {
     
     pub async fn install(&self, url: String) -> JavaDistributionResult<()> {
+        if self.path.exists() {
+            fs::remove_dir_all(&self.path).await?;
+        }
+        fs::create_dir_all(&self.path).await?;
+
         let mut response = reqwest::get(url).await?.error_for_status()?;
         let mut archive_file = NamedTempFile::new()?;
         while let Some(chunk) = response.chunk().await? {

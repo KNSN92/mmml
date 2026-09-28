@@ -8,10 +8,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let path = cwd.join("./temurin_jvm");
     let distribution = TemurinDistribution::new(&path, 25);
     if !distribution.is_installed().await? {
-        if path.exists() {
-            fs::remove_dir_all(&path)?;
-        }
-        fs::create_dir_all(&path)?;
         distribution.install().await?;
     }
     let java = distribution.runtime()?;
