@@ -1,7 +1,7 @@
 use std::{
     io,
     path::{Path, PathBuf},
-    process::{Output, Stdio},
+    process::{ExitStatus, Stdio},
 };
 
 use thiserror::Error;
@@ -11,18 +11,11 @@ use tokio::process::{Child, Command};
 pub enum JavaExecutionError {
     #[error("Java execution binary not found at path: {0}")]
     NotFound(PathBuf),
-    #[error("Java execution failed with exit code: {0:?}")]
-    Failed(Option<i32>),
     #[error("IO error: {0}")]
     IOError(#[from] io::Error),
 }
 
 pub type JavaExecutionResult<T> = Result<T, JavaExecutionError>;
-
-pub struct JavaExecutionOutput {
-    pub stdout: Vec<u8>,
-    pub stderr: Vec<u8>,
-}
 
 pub struct ExecutionParams {
     pub env: Vec<(String, String)>,
@@ -58,27 +51,20 @@ impl JavaRuntime {
         cwd: impl AsRef<Path>,
         args: Vec<String>,
         params: ExecutionParams,
-    ) -> JavaExecutionResult<JavaExecutionOutput> {
+    ) -> JavaExecutionResult<ExitStatus> {
         if !self.0.exists() {
             return Err(JavaExecutionError::NotFound(self.0.clone()));
         }
-        let Output {
-            status,
-            stdout,
-            stderr,
-        } = Command::new(&self.0)
+        let status = Command::new(&self.0)
             .current_dir(cwd)
             .args(args)
             .envs(params.env)
             .stdin(params.stdin)
             .stdout(params.stdout)
             .stderr(params.stderr)
-            .output()
+            .status()
             .await?;
-        if !status.success() {
-            return Err(JavaExecutionError::Failed(status.code()));
-        }
-        Ok(JavaExecutionOutput { stdout, stderr })
+        Ok(status)
     }
 
     pub fn spawn(
@@ -92,6 +78,8 @@ impl JavaRuntime {
             .args(args)
             .envs(params.env)
             .stdin(params.stdin)
+            .stdout(params.stdout)
+            .stderr(params.stderr)
             .spawn()?;
         Ok(child)
     }

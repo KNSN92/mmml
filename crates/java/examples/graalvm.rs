@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::{io::stdout, path::PathBuf};
 
 use java::{
     ExecutionParams,
@@ -16,9 +16,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         distribution.install().await?;
     }
     let java = distribution.runtime()?;
-    let result = java
-        .execute(cwd, vec!["HelloWorld".into()], ExecutionParams::default())
-        .await?;
-    print!("{}", String::from_utf8_lossy(&result.stdout));
+    java.execute(
+        cwd,
+        vec!["HelloWorld".into()],
+        ExecutionParams {
+            stdout: stdout().into(),
+            ..Default::default()
+        },
+    )
+    .await?;
     Ok(())
 }
