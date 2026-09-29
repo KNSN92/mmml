@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use crate::{
     JavaRuntime,
@@ -17,6 +17,16 @@ impl TemurinDistribution {
             version,
         })
     }
+
+    fn bin_path(&self) -> JavaDistributionResult<PathBuf> {
+        let path = platform! {
+            "windows" => self.0.path.join("./bin/java.exe"),
+            "macos" => self.0.path.join("./Contents/Home/bin/java"),
+            "linux" => self.0.path.join("./bin/java"),
+            _ => return Err(JavaDistributionError::UnsupportedPlatform)
+        };
+        Ok(path)
+    }
 }
 
 impl JavaDistribution for TemurinDistribution {
@@ -25,13 +35,7 @@ impl JavaDistribution for TemurinDistribution {
     }
 
     async fn is_installed(&self) -> JavaDistributionResult<bool> {
-        let binary_path = platform! {
-            "windows" => self.0.path.join("./bin/java.exe"),
-            "macos" => self.0.path.join("./Contents/Home/bin/java"),
-            "linux" => self.0.path.join("./bin/java"),
-            _ => return Err(JavaDistributionError::UnsupportedPlatform)
-        };
-        Ok(binary_path.exists())
+        Ok(self.bin_path()?.exists())
     }
 
     async fn install(&self) -> JavaDistributionResult<()> {
@@ -64,12 +68,6 @@ impl JavaDistribution for TemurinDistribution {
     }
 
     fn runtime(&self) -> JavaDistributionResult<JavaRuntime> {
-        let extra_path = platform! {
-            "windows" => "./bin/java.exe",
-            "macos" => "./Contents/Home/bin/java",
-            "linux" => "./bin/java",
-            _ => return Err(JavaDistributionError::UnsupportedPlatform)
-        };
-        self.0.runtime(extra_path)
+        self.0.runtime(self.bin_path()?)
     }
 }
