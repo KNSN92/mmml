@@ -1,4 +1,3 @@
-
 macro_rules! platform {
     { $first_target_os:literal => $first_value:expr, $($target_os:literal => $value:expr,)* _ => $other_value:expr } => {
         if cfg!(target_os = $first_target_os) {

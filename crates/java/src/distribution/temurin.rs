@@ -1,14 +1,21 @@
 use std::path::Path;
 
 use crate::{
-    JavaRuntime, distribution::{InstallableJavaDistributionBase, JavaDistribution, JavaDistributionError, JavaDistributionResult}
+    JavaRuntime,
+    distribution::{
+        InstallableJavaDistributionBase, JavaDistribution, JavaDistributionError,
+        JavaDistributionResult,
+    },
 };
 
 pub struct TemurinDistribution(InstallableJavaDistributionBase);
 
 impl TemurinDistribution {
     pub fn new(path: impl AsRef<Path>, version: u8) -> Self {
-        Self(InstallableJavaDistributionBase { path: path.as_ref().into(), version })
+        Self(InstallableJavaDistributionBase {
+            path: path.as_ref().into(),
+            version,
+        })
     }
 }
 

@@ -1,10 +1,16 @@
-use std::{io::{self, Write}, path::{Path, PathBuf}};
+use std::{
+    io::{self, Write},
+    path::{Path, PathBuf},
+};
 
 use tempfile::{NamedTempFile, TempDir};
-use tokio::fs::{self, File};
 use thiserror::Error;
+use tokio::fs::{self, File};
 
-use crate::{JavaRuntime, extract::{DecompressError, tar_gz_extract, zip_extract}};
+use crate::{
+    JavaRuntime,
+    extract::{DecompressError, tar_gz_extract, zip_extract},
+};
 
 mod temurin;
 pub use temurin::TemurinDistribution;
@@ -42,7 +48,6 @@ pub(crate) struct InstallableJavaDistributionBase {
 }
 
 impl InstallableJavaDistributionBase {
-    
     pub async fn install(&self, url: String) -> JavaDistributionResult<()> {
         if self.path.exists() {
             fs::remove_dir_all(&self.path).await?;
@@ -81,5 +86,4 @@ impl InstallableJavaDistributionBase {
         let path = self.path.join(extra_path);
         Ok(JavaRuntime::new(path))
     }
-
 }

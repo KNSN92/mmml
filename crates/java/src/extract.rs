@@ -46,11 +46,10 @@ pub async fn zip_extract(
             .ok_or(DecompressError::EntryNotFound(entry_idx))?;
         let is_dir = entry.dir()?;
         let filesize = entry.uncompressed_size();
-        if let Some(max_size) = max_size {
-            if filesize > max_size {
+        if let Some(max_size) = max_size
+            && filesize > max_size {
                 return Err(DecompressError::SizeTooLarge(filesize));
             }
-        }
         let filename = entry.filename().as_str()?;
         let path = sanitize_path(filename);
         if path.is_absolute() {
@@ -104,11 +103,10 @@ pub async fn tar_gz_extract(
             continue;
         }
         let entry_size = entry.header().size()?;
-        if let Some(max_size) = max_size {
-            if entry_size > max_size {
+        if let Some(max_size) = max_size
+            && entry_size > max_size {
                 return Err(DecompressError::SizeTooLarge(entry_size));
             }
-        }
         if !entry.unpack_in(&dest).await? {
             return Err(DecompressError::PathTraversal(
                 path.to_string_lossy().to_string(),
