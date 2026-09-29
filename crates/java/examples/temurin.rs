@@ -1,4 +1,4 @@
-use std::{fs, path::PathBuf};
+use std::path::PathBuf;
 
 use java::{ExecutionParams, distribution::{JavaDistribution, TemurinDistribution}};
 
@@ -11,7 +11,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         distribution.install().await?;
     }
     let java = distribution.runtime()?;
-    java.execute(cwd, vec!["HelloWorld".into()], ExecutionParams::default())
+    let result = java.execute(cwd, vec!["HelloWorld".into()], ExecutionParams::default())
         .await?;
+    print!("{}", String::from_utf8_lossy(&result.stdout));
     Ok(())
 }
