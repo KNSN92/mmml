@@ -1,9 +1,11 @@
 use std::{
-    io, path::{Path, PathBuf}, process::{Output, Stdio},
+    io,
+    path::{Path, PathBuf},
+    process::{Output, Stdio},
 };
 
 use thiserror::Error;
-use tokio::process::Command;
+use tokio::process::{Child, Command};
 
 #[derive(Debug, Error)]
 pub enum JavaExecutionError {
@@ -22,14 +24,14 @@ pub struct JavaExecutionOutput {
     pub stderr: Vec<u8>,
 }
 
-pub struct ExecutionParams<I: Into<Stdio>, O: Into<Stdio>, E: Into<Stdio>> {
+pub struct ExecutionParams {
     pub env: Vec<(String, String)>,
-    pub stdin: I,
-    pub stdout: O,
-    pub stderr: E,
+    pub stdin: Stdio,
+    pub stdout: Stdio,
+    pub stderr: Stdio,
 }
 
-impl Default for ExecutionParams<Stdio, Stdio, Stdio> {
+impl Default for ExecutionParams {
     fn default() -> Self {
         Self {
             env: Vec::new(),
@@ -51,16 +53,20 @@ impl JavaRuntime {
         &self.0
     }
 
-    pub async fn execute<I: Into<Stdio>, O: Into<Stdio>, E: Into<Stdio>>(
+    pub async fn execute(
         &self,
         cwd: impl AsRef<Path>,
         args: Vec<String>,
-        params: ExecutionParams<I, O, E>,
+        params: ExecutionParams,
     ) -> JavaExecutionResult<JavaExecutionOutput> {
         if !self.0.exists() {
             return Err(JavaExecutionError::NotFound(self.0.clone()));
         }
-        let Output { status, stdout, stderr } = Command::new(&self.0)
+        let Output {
+            status,
+            stdout,
+            stderr,
+        } = Command::new(&self.0)
             .current_dir(cwd)
             .args(args)
             .envs(params.env)
@@ -75,19 +81,17 @@ impl JavaRuntime {
         Ok(JavaExecutionOutput { stdout, stderr })
     }
 
-    pub fn spawn<I: Into<Stdio>, O: Into<Stdio>, E: Into<Stdio>>(
+    pub fn spawn(
         &self,
         cwd: impl AsRef<Path>,
         args: Vec<String>,
-        params: ExecutionParams<I, O, E>,
-    ) -> JavaExecutionResult<tokio::process::Child> {
+        params: ExecutionParams,
+    ) -> JavaExecutionResult<Child> {
         let child = Command::new(&self.0)
             .current_dir(cwd)
             .args(args)
             .envs(params.env)
             .stdin(params.stdin)
-            .stdout(params.stdout)
-            .stderr(params.stderr)
             .spawn()?;
         Ok(child)
     }
