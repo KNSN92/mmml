@@ -14,6 +14,8 @@ use crate::{
 
 mod temurin;
 pub use temurin::TemurinDistribution;
+mod graalvm;
+pub use graalvm::GraalVMDistribution;
 
 #[derive(Debug, Error)]
 pub enum JavaDistributionError {
