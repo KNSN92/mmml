@@ -18,7 +18,7 @@ pub struct LatestVersion {
 pub struct Version {
     pub id: String,
     #[serde(rename = "type")]
-    pub version_type: String,
+    pub version_type: VersionType,
     pub url: String,
     pub time: String,
     pub release_time: String,
