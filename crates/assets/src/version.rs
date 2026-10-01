@@ -92,8 +92,8 @@ pub enum RuleAction {
 pub struct AssetIndex {
     pub id: String,
     pub sha1: String,
-    pub size: u32,
-    pub total_size: u32,
+    pub size: u64,
+    pub total_size: u64,
     pub url: String,
 }
 
@@ -111,7 +111,7 @@ pub struct Downloads {
 #[serde(deny_unknown_fields)]
 pub struct DownloadInfo {
     pub sha1: String,
-    pub size: u32,
+    pub size: u64,
     pub url: String,
 }
 
@@ -146,7 +146,7 @@ pub struct LibraryDownloads {
 pub struct LibraryArtifact {
     pub path: String,
     pub sha1: String,
-    pub size: u32,
+    pub size: u64,
     pub url: String,
 }
 
@@ -155,7 +155,7 @@ pub struct LibraryArtifact {
 pub struct LibraryClassifier {
     pub path: Option<String>,
     pub sha1: String,
-    pub size: u32,
+    pub size: u64,
     pub url: String,
 }
 
@@ -185,6 +185,6 @@ pub struct LoggingInfo {
 pub struct LoggingFile {
     pub id: String,
     pub sha1: String,
-    pub size: u32,
+    pub size: u64,
     pub url: String,
 }
