@@ -23,7 +23,7 @@ pub struct Version {
     pub time: String,
     pub release_time: String,
     pub sha1: String,
-    pub compliance_level: u8,
+    pub compliance_level: u32,
 }
 
 #[derive(Debug, Deserialize)]
