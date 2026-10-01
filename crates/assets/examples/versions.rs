@@ -13,10 +13,7 @@ use assets::{
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let manifest = VersionManifest::fetch().await?;
-    let base_path = PathBuf::from(env!("CARGO_MANIFEST_PATH"))
-        .parent()
-        .expect("CARGO_MANIFEST_PATH should have a parent. Are you using the root dir as a cargo project???")
-        .join("examples/versions");
+    let base_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("examples/versions");
     if base_path.exists() {
         fs::remove_dir_all(&base_path).unwrap();
     }
