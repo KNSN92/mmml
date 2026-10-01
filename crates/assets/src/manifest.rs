@@ -2,12 +2,14 @@ use serde::Deserialize;
 use thiserror::Error;
 
 #[derive(Debug, Deserialize)]
+#[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
 pub struct VersionManifest {
     pub latest: LatestVersion,
     pub versions: Vec<Version>,
 }
 
 #[derive(Debug, Deserialize)]
+#[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
 pub struct LatestVersion {
     pub release: String,
     pub snapshot: String,
@@ -15,6 +17,7 @@ pub struct LatestVersion {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
 pub struct Version {
     pub id: String,
     #[serde(rename = "type")]
@@ -28,6 +31,7 @@ pub struct Version {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "snake_case")]
+#[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
 pub enum VersionType {
     Release,
     Snapshot,
@@ -43,7 +47,8 @@ pub enum VersionManifestError {
 
 pub type VersionManifestResult<T> = Result<T, VersionManifestError>;
 
-const VERSION_MANIFEST_URL: &str = "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json";
+const VERSION_MANIFEST_URL: &str =
+    "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json";
 
 impl VersionManifest {
     pub async fn fetch() -> VersionManifestResult<Self> {

@@ -4,7 +4,7 @@ use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
-#[serde(deny_unknown_fields)]
+#[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
 pub struct VersionInfo {
     pub arguments: Option<Arguments>,
     pub minecraft_arguments: Option<String>,
@@ -25,7 +25,7 @@ pub struct VersionInfo {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
 pub struct Arguments {
     #[serde(rename = "default-user-jvm")]
     pub default_user_jvm: Option<Vec<Argument>>,
@@ -35,7 +35,7 @@ pub struct Arguments {
 
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
-#[serde(deny_unknown_fields)]
+#[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
 pub enum Argument {
     Single(String),
     Complex {
@@ -46,14 +46,14 @@ pub enum Argument {
 
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
-#[serde(deny_unknown_fields)]
+#[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
 pub enum RuledArgumentValue {
     Single(String),
     Multiple(Vec<String>),
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
 pub struct Rule {
     pub action: RuleAction,
     pub features: Option<FeatureRule>,
@@ -64,7 +64,7 @@ pub type FeatureRule = HashMap<String, bool>;
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
-#[serde(deny_unknown_fields)]
+#[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
 pub struct OsRule {
     pub name: Option<String>,
     pub version: Option<String>,
@@ -73,6 +73,7 @@ pub struct OsRule {
 }
 
 #[derive(Debug, Deserialize)]
+#[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
 pub struct OsVersionRange {
     pub min: Option<String>,
     pub max: Option<String>,
@@ -80,7 +81,7 @@ pub struct OsVersionRange {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "snake_case")]
-#[serde(deny_unknown_fields)]
+#[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
 pub enum RuleAction {
     Allow,
     Disallow,
@@ -88,7 +89,7 @@ pub enum RuleAction {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
-#[serde(deny_unknown_fields)]
+#[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
 pub struct AssetIndex {
     pub id: String,
     pub sha1: String,
@@ -98,7 +99,7 @@ pub struct AssetIndex {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
 pub struct Downloads {
     pub client: DownloadInfo,
     pub client_mappings: Option<DownloadInfo>,
@@ -108,7 +109,7 @@ pub struct Downloads {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
 pub struct DownloadInfo {
     pub sha1: String,
     pub size: u64,
@@ -117,14 +118,14 @@ pub struct DownloadInfo {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
-#[serde(deny_unknown_fields)]
+#[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
 pub struct JavaVersion {
     pub component: String,
     pub major_version: u32,
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
 pub struct LibraryInfo {
     pub name: String,
     pub url: Option<String>,
@@ -135,14 +136,14 @@ pub struct LibraryInfo {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
 pub struct LibraryDownloads {
     pub artifact: Option<LibraryArtifact>,
     pub classifiers: Option<HashMap<String, LibraryClassifier>>,
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
 pub struct LibraryArtifact {
     pub path: String,
     pub sha1: String,
@@ -151,7 +152,7 @@ pub struct LibraryArtifact {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
 pub struct LibraryClassifier {
     pub path: Option<String>,
     pub sha1: String,
@@ -160,19 +161,19 @@ pub struct LibraryClassifier {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
 pub struct LibraryExtract {
     pub exclude: Vec<String>,
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
 pub struct Loggings {
     pub client: LoggingInfo,
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
 pub struct LoggingInfo {
     pub argument: String,
     pub file: LoggingFile,
@@ -181,7 +182,7 @@ pub struct LoggingInfo {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
+#[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
 pub struct LoggingFile {
     pub id: String,
     pub sha1: String,
