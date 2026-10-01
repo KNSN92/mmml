@@ -25,7 +25,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .filter(|v| !matches!(v.version_type, VersionType::Snapshot))
         .map(|v| (&v.id, &v.url))
     {
-        let version_info = request_version_info(version_url).await?;
+        let version_info = request_version_info(version, version_url).await?;
         let mut file = File::options()
             .write(true)
             .create(true)
@@ -38,7 +38,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
 }
 
 #[cfg(not(feature = "debug"))]
-async fn request_version_info(version_url: &str) -> Result<VersionInfo, Box<dyn Error>> {
+async fn request_version_info(
+    _version: &str,
+    version_url: &str,
+) -> Result<VersionInfo, Box<dyn Error>> {
     Ok(reqwest::get(version_url)
         .await?
         .error_for_status()?
@@ -47,7 +50,10 @@ async fn request_version_info(version_url: &str) -> Result<VersionInfo, Box<dyn 
 }
 
 #[cfg(feature = "debug")]
-async fn request_version_info(version_url: &str) -> Result<VersionInfo, Box<dyn Error>> {
+async fn request_version_info(
+    version: &str,
+    version_url: &str,
+) -> Result<VersionInfo, Box<dyn Error>> {
     let version_info = reqwest::get(version_url)
         .await?
         .error_for_status()?
