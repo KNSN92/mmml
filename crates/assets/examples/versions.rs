@@ -22,7 +22,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     for (version, version_url) in manifest
         .versions
         .iter()
-        .filter(|v| !matches!(v.version_type, VersionType::Snapshot))
+        .filter(|v| v.version_type != VersionType::Snapshot)
         .map(|v| (&v.id, &v.url))
     {
         let version_info = request_version_info(version, version_url).await?;

@@ -79,7 +79,7 @@ pub struct OsVersionRange {
     pub max: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "snake_case")]
 #[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
 pub enum RuleAction {

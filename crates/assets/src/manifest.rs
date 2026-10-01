@@ -29,7 +29,7 @@ pub struct Version {
     pub compliance_level: u32,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "snake_case")]
 #[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
 pub enum VersionType {
