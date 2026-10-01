@@ -4,8 +4,8 @@ use thiserror::Error;
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
 pub struct VersionManifest {
-    pub latest: LatestVersion,
-    pub versions: Vec<Version>,
+    latest: LatestVersion,
+    versions: Vec<Version>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -60,5 +60,27 @@ impl VersionManifest {
         let response = response.error_for_status()?;
         let manifest = response.json::<VersionManifest>().await?;
         Ok(manifest)
+    }
+
+    pub fn latest_version(&self) -> &LatestVersion {
+        &self.latest
+    }
+
+    pub fn latest_release(&self) -> Option<&Version> {
+        let latest_id = &self.latest.release;
+        self.versions.iter().find(|v| &v.id == latest_id)
+    }
+
+    pub fn latest_snapshot(&self) -> Option<&Version> {
+        let latest_id = &self.latest.snapshot;
+        self.versions.iter().find(|v| &v.id == latest_id)
+    }
+
+    pub fn find_version(&self, version_id: &str) -> Option<&Version> {
+        self.versions.iter().find(|v| v.id == version_id)
+    }
+
+    pub fn versions(&self) -> &[Version] {
+        &self.versions
     }
 }

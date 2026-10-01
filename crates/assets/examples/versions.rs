@@ -20,7 +20,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     fs::create_dir_all(&base_path).unwrap();
     let base_path = base_path.canonicalize().unwrap();
     for (version, version_url) in manifest
-        .versions
+        .versions()
         .iter()
         .filter(|v| v.version_type != VersionType::Snapshot)
         .map(|v| (&v.id, &v.url))
