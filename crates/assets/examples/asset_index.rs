@@ -1,12 +1,9 @@
-use std::{
-    error::Error,
-    fs::{self, File},
-    io::Write,
-    path::PathBuf,
-};
+use std::{error::Error, fs, path::PathBuf};
 
 use assets::asset::AssetIndex;
 use assets::{manifest::VersionManifest, version::VersionInfo};
+use tokio::fs::File;
+use tokio::io::AsyncWriteExt;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -25,8 +22,25 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .create(true)
         .truncate(true)
         .open(base_path.join(format!("{}.txt", version_info.asset_index.id)))
-        .unwrap();
-    file.write_all(format!("{:#?}", asset_index).as_bytes())?;
+        .await?;
+    file.write_all(format!("{:#?}", asset_index).as_bytes())
+        .await?;
+    let base_path = base_path.join("objects");
+    if base_path.exists() {
+        fs::remove_dir_all(&base_path)?;
+    }
+    let client = reqwest::Client::new();
+    for object in asset_index.objects() {
+        let base_path = base_path.join(object.prefix());
+        fs::create_dir_all(&base_path)?;
+        let mut file = File::options()
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(base_path.join(object.hash()))
+            .await?;
+        object.fetch(client.clone(), &mut file).await?;
+    }
     Ok(())
 }
 
