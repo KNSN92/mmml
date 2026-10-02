@@ -31,13 +31,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
     }
     let client = reqwest::Client::new();
     for object in asset_index.objects() {
-        let base_path = base_path.join(object.prefix());
+        let base_path = base_path.join(object.hash.prefix());
         fs::create_dir_all(&base_path)?;
         let mut file = File::options()
             .write(true)
             .create(true)
             .truncate(true)
-            .open(base_path.join(object.hash()))
+            .open(base_path.join(object.hash.to_string()))
             .await?;
         object.fetch(client.clone(), &mut file).await?;
     }

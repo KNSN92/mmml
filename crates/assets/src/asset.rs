@@ -15,8 +15,8 @@ pub struct AssetIndex {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
 pub struct AssetObject {
-    hash: FileHash,
-    size: u64,
+    pub hash: FileHash,
+    pub size: u64,
 }
 
 impl AssetIndex {
@@ -55,19 +55,6 @@ pub enum AssetObjectError {
 pub type AssetObjectResult<T> = Result<T, AssetObjectError>;
 
 impl AssetObject {
-    pub fn hash(&self) -> String {
-        self.hash.to_string()
-    }
-
-    pub fn prefix(&self) -> String {
-        // self.hash()は常に20バイトの16進数文字列、つまり40文字の文字列なので、常に先頭2文字を取得することができる。
-        self.hash()[0..2].into()
-    }
-
-    pub fn size(&self) -> u64 {
-        self.size
-    }
-
     pub async fn fetch(
         &self,
         client: reqwest::Client,
@@ -75,8 +62,8 @@ impl AssetObject {
     ) -> AssetObjectResult<()> {
         let url = format!(
             "https://resources.download.minecraft.net/{}/{}",
-            self.prefix(),
-            self.hash()
+            self.hash.prefix(),
+            self.hash.to_string()
         );
         self.fetch_with_url(client, &url, writer).await
     }

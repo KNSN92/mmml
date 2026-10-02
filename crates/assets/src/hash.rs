@@ -29,6 +29,10 @@ impl FileHash {
     pub fn as_bytes(&self) -> &[u8; 20] {
         &self.0
     }
+
+    pub fn prefix(&self) -> String {
+        hex::encode(&[self.0[0]])
+    }
 }
 
 impl std::fmt::Display for FileHash {
