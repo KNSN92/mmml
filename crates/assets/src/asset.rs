@@ -2,6 +2,8 @@ use std::collections::HashMap;
 
 use serde::Deserialize;
 
+use crate::hash::FileHash;
+
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
 pub struct AssetIndex {
@@ -11,6 +13,6 @@ pub struct AssetIndex {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
 pub struct AssetObject {
-    pub hash: String,
+    pub hash: FileHash,
     pub size: u64,
 }
