@@ -1,6 +1,8 @@
 use serde::Deserialize;
 use thiserror::Error;
 
+use crate::hash::FileHash;
+
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
 pub struct VersionManifest {
@@ -25,7 +27,7 @@ pub struct Version {
     pub url: String,
     pub time: String,
     pub release_time: String,
-    pub sha1: String,
+    pub sha1: FileHash,
     pub compliance_level: u32,
 }
 

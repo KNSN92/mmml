@@ -2,6 +2,8 @@ use std::collections::HashMap;
 
 use serde::Deserialize;
 
+use crate::hash::FileHash;
+
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
@@ -92,7 +94,7 @@ pub enum RuleAction {
 #[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
 pub struct AssetInfo {
     pub id: String,
-    pub sha1: String,
+    pub sha1: FileHash,
     pub size: u64,
     pub total_size: u64,
     pub url: String,
@@ -111,7 +113,7 @@ pub struct Downloads {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
 pub struct DownloadInfo {
-    pub sha1: String,
+    pub sha1: FileHash,
     pub size: u64,
     pub url: String,
 }
@@ -146,7 +148,7 @@ pub struct LibraryDownloads {
 #[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
 pub struct LibraryArtifact {
     pub path: String,
-    pub sha1: String,
+    pub sha1: FileHash,
     pub size: u64,
     pub url: String,
 }
@@ -155,7 +157,7 @@ pub struct LibraryArtifact {
 #[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
 pub struct LibraryClassifier {
     pub path: Option<String>,
-    pub sha1: String,
+    pub sha1: FileHash,
     pub size: u64,
     pub url: String,
 }
@@ -185,7 +187,7 @@ pub struct LoggingInfo {
 #[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
 pub struct LoggingFile {
     pub id: String,
-    pub sha1: String,
+    pub sha1: FileHash,
     pub size: u64,
     pub url: String,
 }
