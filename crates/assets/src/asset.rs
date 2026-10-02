@@ -88,13 +88,16 @@ impl AssetObject {
         while let Some(chunk) = response.chunk().await? {
             content_length += chunk.len() as u64;
             if content_length > self.size {
-                return Err(AssetObjectError::ContentLengthMismatch {
-                    expected: self.size,
-                    actual: content_length,
-                });
+                break;
             }
             actual_hash.update(&chunk);
             chunks.push(chunk);
+        }
+        if content_length != self.size {
+            return Err(AssetObjectError::ContentLengthMismatch {
+                expected: self.size,
+                actual: content_length,
+            });
         }
         // sha1 is always 20 bytes
         let actual_hash = actual_hash.finalize();
