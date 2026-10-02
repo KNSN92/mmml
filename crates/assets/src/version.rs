@@ -142,22 +142,13 @@ pub struct LibraryInfo {
 #[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
 pub struct LibraryDownloads {
     pub artifact: Option<LibraryArtifact>,
-    pub classifiers: Option<HashMap<String, LibraryClassifier>>,
+    pub classifiers: Option<HashMap<String, LibraryArtifact>>,
 }
 
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
 pub struct LibraryArtifact {
     pub path: String,
-    pub sha1: FileHash,
-    pub size: u64,
-    pub url: Url,
-}
-
-#[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
-pub struct LibraryClassifier {
-    pub path: Option<String>,
     pub sha1: FileHash,
     pub size: u64,
     pub url: Url,
