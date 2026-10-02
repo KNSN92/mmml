@@ -5,7 +5,7 @@ use std::{
     path::PathBuf,
 };
 
-use assets::asset::AssetInfo;
+use assets::asset::AssetIndex;
 use assets::{manifest::VersionManifest, version::VersionInfo};
 
 #[tokio::main]
@@ -31,23 +31,23 @@ async fn main() -> Result<(), Box<dyn Error>> {
 }
 
 #[cfg(not(feature = "debug"))]
-async fn request_asset_index(version_url: &str) -> Result<AssetInfo, Box<dyn Error>> {
+async fn request_asset_index(version_url: &str) -> Result<AssetIndex, Box<dyn Error>> {
     Ok(reqwest::get(version_url)
         .await?
         .error_for_status()?
-        .json::<AssetInfo>()
+        .json::<AssetIndex>()
         .await?)
 }
 
 #[cfg(feature = "debug")]
-async fn request_asset_index(version_url: &str) -> Result<AssetInfo, Box<dyn Error>> {
+async fn request_asset_index(version_url: &str) -> Result<AssetIndex, Box<dyn Error>> {
     let version_info = reqwest::get(version_url)
         .await?
         .error_for_status()?
         .text()
         .await?;
     let mut deserializer = serde_json::Deserializer::from_str(&version_info);
-    let version_info: AssetInfo = serde_path_to_error::deserialize(&mut deserializer)
+    let version_info: AssetIndex = serde_path_to_error::deserialize(&mut deserializer)
         .map_err(|e| format!("Failed to deserialize asset index for url:{version_url} {e:?}"))?;
     Ok(version_info)
 }

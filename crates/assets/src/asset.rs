@@ -4,7 +4,7 @@ use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
-pub struct AssetInfo {
+pub struct AssetIndex {
     pub objects: HashMap<String, AssetObject>,
 }
 

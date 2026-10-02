@@ -8,7 +8,7 @@ use serde::Deserialize;
 pub struct VersionInfo {
     pub arguments: Option<Arguments>,
     pub minecraft_arguments: Option<String>,
-    pub asset_index: AssetIndex,
+    pub asset_index: AssetInfo,
     pub assets: String,
     pub compliance_level: Option<u32>,
     pub downloads: Downloads,
@@ -90,7 +90,7 @@ pub enum RuleAction {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
-pub struct AssetIndex {
+pub struct AssetInfo {
     pub id: String,
     pub sha1: String,
     pub size: u64,
