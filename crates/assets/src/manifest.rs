@@ -1,5 +1,6 @@
 use serde::Deserialize;
 use thiserror::Error;
+use url::Url;
 
 use crate::hash::FileHash;
 
@@ -24,7 +25,7 @@ pub struct Version {
     pub id: String,
     #[serde(rename = "type")]
     pub version_type: VersionType,
-    pub url: String,
+    pub url: Url,
     pub time: String,
     pub release_time: String,
     pub sha1: FileHash,

@@ -4,6 +4,7 @@ use assets::asset::AssetIndex;
 use assets::{manifest::VersionManifest, version::VersionInfo};
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
+use url::Url;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -11,12 +12,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let latest_release = manifest.latest_release().unwrap();
     let base_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("examples");
     fs::create_dir_all(&base_path).unwrap();
-    let version_info = reqwest::get(&latest_release.url)
+    let version_info = reqwest::get(latest_release.url.clone())
         .await?
         .error_for_status()?
         .json::<VersionInfo>()
         .await?;
-    let asset_index = request_asset_index(&version_info.asset_index.url).await?;
+    let asset_index = request_asset_index(version_info.asset_index.url).await?;
     let mut file = File::options()
         .write(true)
         .create(true)
@@ -45,7 +46,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 }
 
 #[cfg(not(feature = "debug"))]
-async fn request_asset_index(version_url: &str) -> Result<AssetIndex, Box<dyn Error>> {
+async fn request_asset_index(version_url: Url) -> Result<AssetIndex, Box<dyn Error>> {
     Ok(reqwest::get(version_url)
         .await?
         .error_for_status()?
@@ -54,8 +55,8 @@ async fn request_asset_index(version_url: &str) -> Result<AssetIndex, Box<dyn Er
 }
 
 #[cfg(feature = "debug")]
-async fn request_asset_index(version_url: &str) -> Result<AssetIndex, Box<dyn Error>> {
-    let version_info = reqwest::get(version_url)
+async fn request_asset_index(version_url: Url) -> Result<AssetIndex, Box<dyn Error>> {
+    let version_info = reqwest::get(version_url.clone())
         .await?
         .error_for_status()?
         .text()

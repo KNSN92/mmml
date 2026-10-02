@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use serde::Deserialize;
+use url::Url;
 
 use crate::hash::FileHash;
 
@@ -97,7 +98,7 @@ pub struct AssetInfo {
     pub sha1: FileHash,
     pub size: u64,
     pub total_size: u64,
-    pub url: String,
+    pub url: Url,
 }
 
 #[derive(Debug, Deserialize)]
@@ -115,7 +116,7 @@ pub struct Downloads {
 pub struct DownloadInfo {
     pub sha1: FileHash,
     pub size: u64,
-    pub url: String,
+    pub url: Url,
 }
 
 #[derive(Debug, Deserialize)]
@@ -130,7 +131,7 @@ pub struct JavaVersion {
 #[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
 pub struct LibraryInfo {
     pub name: String,
-    pub url: Option<String>,
+    pub url: Option<Url>,
     pub downloads: LibraryDownloads,
     pub natives: Option<HashMap<String, String>>,
     pub extract: Option<LibraryExtract>,
@@ -150,7 +151,7 @@ pub struct LibraryArtifact {
     pub path: String,
     pub sha1: FileHash,
     pub size: u64,
-    pub url: String,
+    pub url: Url,
 }
 
 #[derive(Debug, Deserialize)]
@@ -159,7 +160,7 @@ pub struct LibraryClassifier {
     pub path: Option<String>,
     pub sha1: FileHash,
     pub size: u64,
-    pub url: String,
+    pub url: Url,
 }
 
 #[derive(Debug, Deserialize)]
@@ -189,5 +190,5 @@ pub struct LoggingFile {
     pub id: String,
     pub sha1: FileHash,
     pub size: u64,
-    pub url: String,
+    pub url: Url,
 }

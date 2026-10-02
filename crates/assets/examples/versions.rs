@@ -9,6 +9,7 @@ use assets::{
     manifest::{VersionManifest, VersionType},
     version::VersionInfo,
 };
+use url::Url;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -25,7 +26,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .filter(|v| v.version_type != VersionType::Snapshot)
         .map(|v| (&v.id, &v.url))
     {
-        let version_info = request_version_info(version, version_url).await?;
+        let version_info = request_version_info(version, version_url.clone()).await?;
         let mut file = File::options()
             .write(true)
             .create(true)
@@ -40,7 +41,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 #[cfg(not(feature = "debug"))]
 async fn request_version_info(
     _version: &str,
-    version_url: &str,
+    version_url: Url,
 ) -> Result<VersionInfo, Box<dyn Error>> {
     Ok(reqwest::get(version_url)
         .await?
@@ -52,9 +53,9 @@ async fn request_version_info(
 #[cfg(feature = "debug")]
 async fn request_version_info(
     version: &str,
-    version_url: &str,
+    version_url: Url,
 ) -> Result<VersionInfo, Box<dyn Error>> {
-    let version_info = reqwest::get(version_url)
+    let version_info = reqwest::get(version_url.clone())
         .await?
         .error_for_status()?
         .text()
