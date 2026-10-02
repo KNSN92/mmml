@@ -7,6 +7,7 @@ edition = "2024"
 async-compression = { version = "0.4.48", features = ["tokio", "gzip"] }
 async_zip = { version = "0.0.19", features = ["deflate", "tokio", "tokio-fs"] }
 futures = "0.3.34"
+platform = { path = "../platform" }
 reqwest = "0.13.5"
 sanitize-filename = "0.6.0"
 tempfile = "3.27.0"

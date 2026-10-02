@@ -3,6 +3,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use platform::Os;
 use tempfile::{NamedTempFile, TempDir};
 use thiserror::Error;
 use tokio::fs::{self, File};
@@ -62,14 +63,18 @@ impl InstallableJavaDistributionBase {
             archive_file.write_all(&chunk)?;
         }
         let extracted_dir = TempDir::new()?;
-
-        platform! {
-            "windows" => zip_extract(File::from_std(archive_file.reopen()?), &extracted_dir, None).await?,
-            "macos" => tar_gz_extract(File::from_std(archive_file.reopen()?), &extracted_dir, None).await?,
-            "linux" => tar_gz_extract(File::from_std(archive_file.reopen()?), &extracted_dir, None).await?,
-            _ => return Err(JavaDistributionError::UnsupportedPlatform)
+        match Os::current() {
+            Os::Windows => {
+                zip_extract(File::from_std(archive_file.reopen()?), &extracted_dir, None).await?
+            }
+            Os::MacOS => {
+                tar_gz_extract(File::from_std(archive_file.reopen()?), &extracted_dir, None).await?
+            }
+            Os::Linux => {
+                tar_gz_extract(File::from_std(archive_file.reopen()?), &extracted_dir, None).await?
+            }
+            _ => return Err(JavaDistributionError::UnsupportedPlatform),
         }
-
         let extracted_archive_dir = fs::read_dir(&extracted_dir)
             .await?
             .next_entry()

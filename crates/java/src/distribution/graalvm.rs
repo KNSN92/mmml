@@ -1,5 +1,7 @@
 use std::path::{Path, PathBuf};
 
+use platform::{Arch, Os};
+
 use crate::distribution::{
     InstallableJavaDistributionBase, JavaDistribution, JavaDistributionError,
     JavaDistributionResult,
@@ -16,11 +18,11 @@ impl GraalVMDistribution {
     }
 
     fn bin_path(&self) -> JavaDistributionResult<PathBuf> {
-        let path = platform! {
-            "windows" => self.0.path.join("./bin/java.exe"),
-            "macos" => self.0.path.join("./Contents/Home/bin/java"),
-            "linux" => self.0.path.join("./bin/java"),
-            _ => return Err(JavaDistributionError::UnsupportedPlatform)
+        let path = match Os::current() {
+            Os::Windows => self.0.path.join("./bin/java.exe"),
+            Os::MacOS => self.0.path.join("./Contents/Home/bin/java"),
+            Os::Linux => self.0.path.join("./bin/java"),
+            _ => return Err(JavaDistributionError::UnsupportedPlatform),
         };
         Ok(path)
     }
@@ -43,18 +45,18 @@ impl JavaDistribution for GraalVMDistribution {
             return Err(JavaDistributionError::AlreadyInstalled);
         }
 
-        let (platform, file_ext) = platform! {
-            "windows" => ("windows", "zip"),
-            "macos" => ("macos", "tar.gz"),
-            "linux" => ("linux", "tar.gz"),
-            _ => return Err(JavaDistributionError::UnsupportedPlatform)
+        let (platform, file_ext) = match Os::current() {
+            Os::Windows => ("windows", "zip"),
+            Os::MacOS => ("macos", "tar.gz"),
+            Os::Linux => ("linux", "tar.gz"),
+            _ => return Err(JavaDistributionError::UnsupportedPlatform),
         };
-        let arch = arch! {
-            "x86" => "x86",
-            "x86_64" => "x64",
-            "arm" => "arm",
-            "aarch64" => "aarch64",
-            _ => return Err(JavaDistributionError::UnsupportedArchitecture)
+        let arch = match Arch::current() {
+            Arch::X86 => "x86",
+            Arch::X64 => "x64",
+            Arch::Arm => "arm",
+            Arch::Aarch64 => "aarch64",
+            _ => return Err(JavaDistributionError::UnsupportedArchitecture),
         };
 
         let url = if self.0.version > 17 {
