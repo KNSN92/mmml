@@ -38,9 +38,7 @@ impl AssetIndex {
 #[derive(Debug, Error)]
 pub enum AssetObjectError {
     #[error("Content length mismatch: expected {expected} but got {actual:?}")]
-    ContentLengthMismatch { expected: u64, actual: Option<u64> },
-    #[error("Invalid hash format: {0}")]
-    InvalidHashFormat(#[from] hex::FromHexError),
+    ContentLengthMismatch { expected: u64, actual: u64 },
     #[error("Hash mismatch: expected {expected} but got {actual}")]
     HashMismatch {
         expected: FileHash,
@@ -76,16 +74,27 @@ impl AssetObject {
     ) -> AssetObjectResult<()> {
         let mut response = client.get(url).send().await?.error_for_status()?;
         let content_length = response.content_length();
-        if content_length != Some(self.size) {
+        if let Some(content_length) = content_length
+            && content_length != self.size
+        {
             return Err(AssetObjectError::ContentLengthMismatch {
                 expected: self.size,
                 actual: content_length,
             });
         }
+        let mut content_length = 0;
         let mut actual_hash = FileHash::digest_chunks();
+        let mut chunks = Vec::new();
         while let Some(chunk) = response.chunk().await? {
-            writer.write_all(&chunk).await?;
+            content_length += chunk.len() as u64;
+            if content_length > self.size {
+                return Err(AssetObjectError::ContentLengthMismatch {
+                    expected: self.size,
+                    actual: content_length,
+                });
+            }
             actual_hash.update(&chunk);
+            chunks.push(chunk);
         }
         // sha1 is always 20 bytes
         let actual_hash = actual_hash.finalize();
@@ -94,6 +103,9 @@ impl AssetObject {
                 expected: self.hash,
                 actual: actual_hash,
             });
+        }
+        for chunk in chunks {
+            writer.write_all(&chunk).await?;
         }
         Ok(())
     }
