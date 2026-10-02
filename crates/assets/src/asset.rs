@@ -95,7 +95,7 @@ impl AssetObject {
                 actual: content_length,
             });
         }
-        let mut actual_hash = FileHash::from_chunks();
+        let mut actual_hash = FileHash::digest_chunks();
         while let Some(chunk) = response.chunk().await? {
             writer.write_all(&chunk).await?;
             actual_hash.update(&chunk);

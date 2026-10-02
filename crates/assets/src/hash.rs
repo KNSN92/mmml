@@ -15,14 +15,14 @@ impl FileHash {
         Ok(FileHash(hash))
     }
 
-    pub fn from_bytes(bytes: &[u8]) -> FileHash {
+    pub fn digest(bytes: &[u8]) -> FileHash {
         let hash = *Sha1::digest(bytes)
             .as_array::<20>()
             .expect("sha1 is always 20 bytes. so this should never fail! right?");
         FileHash(hash)
     }
 
-    pub fn from_chunks() -> FileHashChunks {
+    pub fn digest_chunks() -> FileHashChunks {
         FileHashChunks(Sha1::new())
     }
 
