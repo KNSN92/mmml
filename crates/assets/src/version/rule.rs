@@ -56,7 +56,11 @@ impl RuleContext {
         }
     }
 
-    pub fn with_platform(os: Os, arch: Arch, features: impl IntoIterator<Item = (String, bool)>) -> Self {
+    pub fn with_platform(
+        os: Os,
+        arch: Arch,
+        features: impl IntoIterator<Item = (String, bool)>,
+    ) -> Self {
         Self {
             features: features.into_iter().collect(),
             os,
@@ -82,18 +86,21 @@ pub enum RuleEvalError {
 pub type RuleEvalResult<T> = std::result::Result<T, RuleEvalError>;
 
 impl Rule {
-    pub fn is_allowed(&self, context: &RuleContext) -> RuleEvalResult<bool> {
-        let is_allowed = self.is_allowed_inner(context)?;
+    pub fn matches(&self, context: &RuleContext) -> RuleEvalResult<bool> {
+        let is_allowed = self.matches_inner(context)?;
         match self.action {
             RuleAction::Allow => Ok(is_allowed),
             RuleAction::Disallow => Ok(!is_allowed),
         }
     }
 
-    fn is_allowed_inner(&self, context: &RuleContext) -> RuleEvalResult<bool> {
+    fn matches_inner(&self, context: &RuleContext) -> RuleEvalResult<bool> {
         if let Some(expected_features) = &self.features {
             for (feature, &expected) in expected_features.iter() {
-                let actual = *context.features.get(feature).ok_or_else(|| RuleEvalError::FeatureNotFound(feature.clone()))?;
+                let actual = *context
+                    .features
+                    .get(feature)
+                    .ok_or_else(|| RuleEvalError::FeatureNotFound(feature.clone()))?;
                 if actual != expected {
                     return Ok(false);
                 }
@@ -122,7 +129,10 @@ impl OsRule {
             }
         }
         if let Some(version) = self.version.as_deref() {
-            let actual_version = context.os.version().ok_or_else(|| RuleEvalError::CannotGetOsVersion)?;
+            let actual_version = context
+                .os
+                .version()
+                .ok_or_else(|| RuleEvalError::CannotGetOsVersion)?;
             if !Regex::new(version)?.is_match(actual_version) {
                 return Ok(false);
             }
