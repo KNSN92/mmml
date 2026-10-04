@@ -7,6 +7,14 @@ use thiserror::Error;
 use crate::version::rule::{Rule, RuleAction, RuleContext};
 
 #[derive(Debug, Deserialize)]
+#[serde(untagged)]
+#[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
+pub enum CompatibleArguments {
+    Text(String),
+    Structured(Arguments),
+}
+
+#[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
 pub struct Arguments {
     #[serde(rename = "default-user-jvm")]

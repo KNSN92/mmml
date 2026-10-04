@@ -3,7 +3,10 @@ use std::collections::HashMap;
 use serde::Deserialize;
 use url::Url;
 
-use crate::{hash::FileHash, version::{args::Arguments, rule::Rule}};
+use crate::{
+    hash::FileHash,
+    version::{args::CompatibleArguments, rule::Rule},
+};
 
 pub mod args;
 pub mod rule;
@@ -12,8 +15,8 @@ pub mod rule;
 #[serde(rename_all = "camelCase")]
 #[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
 pub struct VersionInfo {
-    pub arguments: Option<Arguments>,
-    pub minecraft_arguments: Option<String>,
+    #[serde(alias = "minecraftArguments")]
+    pub arguments: Option<CompatibleArguments>,
     pub asset_index: AssetInfo,
     pub assets: String,
     pub compliance_level: Option<u32>,
