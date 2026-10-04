@@ -3,8 +3,9 @@ use std::collections::HashMap;
 use serde::Deserialize;
 use url::Url;
 
-use crate::{hash::FileHash, version::rule::Rule};
+use crate::{hash::FileHash, version::{args::Arguments, rule::Rule}};
 
+pub mod args;
 pub mod rule;
 
 #[derive(Debug, Deserialize)]
@@ -27,34 +28,6 @@ pub struct VersionInfo {
     pub time: String,
     #[serde(rename = "type")]
     pub type_: String,
-}
-
-#[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
-pub struct Arguments {
-    #[serde(rename = "default-user-jvm")]
-    pub default_user_jvm: Option<Vec<Argument>>,
-    pub game: Vec<Argument>,
-    pub jvm: Vec<Argument>,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(untagged)]
-#[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
-pub enum Argument {
-    Single(String),
-    Complex {
-        rules: Option<Vec<Rule>>,
-        value: RuledArgumentValue,
-    },
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(untagged)]
-#[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
-pub enum RuledArgumentValue {
-    Single(String),
-    Multiple(Vec<String>),
 }
 
 #[derive(Debug, Deserialize)]
