@@ -1,4 +1,6 @@
-use std::env::consts;
+use std::{env::consts, sync::LazyLock};
+
+use os_version::OsVersion;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Os {
@@ -8,6 +10,16 @@ pub enum Os {
     Other(&'static str),
 }
 
+static OS_VERSION: LazyLock<Option<String>> = LazyLock::new(|| {
+    let os_version = os_version::detect().ok()?;
+    match os_version {
+        OsVersion::Windows(os) => Some(os.version),
+        OsVersion::MacOS(os) => Some(os.version),
+        OsVersion::Linux(os) => os.version,
+        _ => None,
+    }
+});
+
 impl Os {
     pub fn current() -> Self {
         match consts::OS {
@@ -16,6 +28,14 @@ impl Os {
             "linux" => Os::Linux,
             _ => Os::Other(consts::OS),
         }
+    }
+
+    pub fn version(&self) -> Option<&'static str> {
+        // selfと実際のOSが一致しない場合は、バージョン情報を返さない
+        if *self != Os::current() {
+            return None;
+        }
+        OS_VERSION.as_deref()
     }
 }
 
