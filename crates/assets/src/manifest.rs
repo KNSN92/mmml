@@ -14,8 +14,8 @@ pub struct VersionManifest {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
 pub struct LatestVersion {
-    pub release: String,
-    pub snapshot: String,
+    release: String,
+    snapshot: String,
 }
 
 #[derive(Debug, Deserialize)]

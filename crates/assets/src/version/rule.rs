@@ -8,9 +8,9 @@ use thiserror::Error;
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
 pub struct Rule {
-    pub action: RuleAction,
-    pub features: Option<FeatureRule>,
-    pub os: Option<OsRule>,
+    action: RuleAction,
+    features: Option<FeatureRule>,
+    os: Option<OsRule>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
@@ -27,17 +27,19 @@ pub type FeatureRule = HashMap<String, bool>;
 #[serde(rename_all = "camelCase")]
 #[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
 pub struct OsRule {
-    pub name: Option<String>,
-    pub version: Option<String>,
-    pub version_range: Option<OsVersionRange>,
-    pub arch: Option<String>,
+    name: Option<String>,
+    version: Option<String>,
+    #[allow(unused, reason = "todo")]
+    version_range: Option<OsVersionRange>,
+    arch: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
+#[allow(unused, reason = "todo")]
 pub struct OsVersionRange {
-    pub min: Option<String>,
-    pub max: Option<String>,
+    min: Option<String>,
+    max: Option<String>,
 }
 
 //TODO: Add tests for RuleContext and Rule evaluation~
