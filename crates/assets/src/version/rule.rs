@@ -13,7 +13,7 @@ pub struct Rule {
     pub os: Option<OsRule>,
 }
 
-#[derive(Debug, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
 #[serde(rename_all = "snake_case")]
 #[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
 pub enum RuleAction {
@@ -86,15 +86,15 @@ pub enum RuleEvalError {
 pub type RuleEvalResult<T> = std::result::Result<T, RuleEvalError>;
 
 impl Rule {
-    pub fn matches(&self, context: &RuleContext) -> RuleEvalResult<bool> {
-        let is_allowed = self.matches_inner(context)?;
-        match self.action {
-            RuleAction::Allow => Ok(is_allowed),
-            RuleAction::Disallow => Ok(!is_allowed),
+    pub fn apply(&self, context: &RuleContext) -> RuleEvalResult<Option<RuleAction>> {
+        if self.matches(context)? {
+            Ok(Some(self.action))
+        } else {
+            Ok(None)
         }
     }
 
-    fn matches_inner(&self, context: &RuleContext) -> RuleEvalResult<bool> {
+    pub fn matches(&self, context: &RuleContext) -> RuleEvalResult<bool> {
         if let Some(expected_features) = &self.features {
             for (feature, &expected) in expected_features.iter() {
                 let actual = *context
