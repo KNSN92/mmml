@@ -2,13 +2,20 @@ use std::{env::consts, sync::LazyLock};
 
 use os_version::OsVersion;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Os {
     Windows,
     MacOS,
     Linux,
     Other(&'static str),
 }
+
+static CURRENT_OS: LazyLock<Os> = LazyLock::new(|| match consts::OS {
+    "windows" => Os::Windows,
+    "macos" => Os::MacOS,
+    "linux" => Os::Linux,
+    _ => Os::Other(consts::OS),
+});
 
 static OS_VERSION: LazyLock<Option<String>> = LazyLock::new(|| {
     let os_version = os_version::detect().ok()?;
@@ -20,14 +27,17 @@ static OS_VERSION: LazyLock<Option<String>> = LazyLock::new(|| {
     }
 });
 
+static CURRENT_ARCH: LazyLock<Arch> = LazyLock::new(|| match consts::ARCH {
+    "x86" => Arch::X86,
+    "x86_64" => Arch::X64,
+    "arm" => Arch::Arm,
+    "aarch64" => Arch::Aarch64,
+    _ => Arch::Other(consts::ARCH),
+});
+
 impl Os {
     pub fn current() -> Self {
-        match consts::OS {
-            "windows" => Os::Windows,
-            "macos" => Os::MacOS,
-            "linux" => Os::Linux,
-            _ => Os::Other(consts::OS),
-        }
+        *CURRENT_OS
     }
 
     pub fn version(&self) -> Option<&'static str> {
@@ -39,23 +49,17 @@ impl Os {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Arch {
     X86,
     X64,
     Arm,
     Aarch64,
-    Other(String),
+    Other(&'static str),
 }
 
 impl Arch {
     pub fn current() -> Self {
-        match consts::ARCH {
-            "x86" => Arch::X86,
-            "x86_64" => Arch::X64,
-            "arm" => Arch::Arm,
-            "aarch64" => Arch::Aarch64,
-            other => Arch::Other(other.to_string()),
-        }
+        *CURRENT_ARCH
     }
 }
