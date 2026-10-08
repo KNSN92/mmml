@@ -121,6 +121,13 @@ fn resolve_value(value: &str, context: &ArgumentsContext) -> ArgumentResolutionR
     Ok(new)
 }
 
+#[derive(Debug)]
+pub struct ResolvedArguments {
+    pub default_user_jvm: Vec<String>,
+    pub game: Vec<String>,
+    pub jvm: Vec<String>,
+}
+
 impl Arguments {
     pub fn resolve_default_user_jvm(
         &self,
@@ -130,6 +137,17 @@ impl Arguments {
             Some(args) => resolve_args(args, context),
             None => Ok(vec![]),
         }
+    }
+
+    pub fn resolve(
+        &self,
+        context: &ArgumentsContext,
+    ) -> ArgumentResolutionResult<ResolvedArguments> {
+        Ok(ResolvedArguments {
+            default_user_jvm: self.resolve_default_user_jvm(context)?,
+            game: self.resolve_game(context)?,
+            jvm: self.resolve_jvm(context)?,
+        })
     }
 
     pub fn resolve_game(
@@ -152,4 +170,25 @@ fn resolve_args(
         acc.extend(arg.resolve(context)?);
         Ok(acc)
     })
+}
+
+impl CompatibleArguments {
+    pub fn resolve(
+        &self,
+        context: &ArgumentsContext,
+    ) -> ArgumentResolutionResult<ResolvedArguments> {
+        let args = match self {
+            CompatibleArguments::Structured(args) => return args.resolve(context),
+            CompatibleArguments::Text(text) => text.as_str(),
+        };
+        let args = args
+            .split_whitespace()
+            .map(|arg| resolve_value(arg, context))
+            .collect::<ArgumentResolutionResult<Vec<String>>>()?;
+        Ok(ResolvedArguments {
+            default_user_jvm: vec![],
+            game: args,
+            jvm: vec![],
+        })
+    }
 }
