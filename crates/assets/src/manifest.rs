@@ -2,7 +2,7 @@ use serde::Deserialize;
 use thiserror::Error;
 use url::Url;
 
-use crate::hash::FileHash;
+use crate::hash::ResourceHash;
 
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
@@ -28,7 +28,7 @@ pub struct Version {
     pub url: Url,
     pub time: String,
     pub release_time: String,
-    pub sha1: FileHash,
+    pub sha1: ResourceHash,
     pub compliance_level: u32,
 }
 

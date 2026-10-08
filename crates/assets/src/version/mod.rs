@@ -4,7 +4,7 @@ use serde::Deserialize;
 use url::Url;
 
 use crate::{
-    hash::FileHash,
+    hash::ResourceHash,
     version::{args::CompatibleArguments, rule::Rule},
 };
 
@@ -38,7 +38,7 @@ pub struct VersionInfo {
 #[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
 pub struct AssetInfo {
     pub id: String,
-    pub sha1: FileHash,
+    pub sha1: ResourceHash,
     pub size: u64,
     pub total_size: u64,
     pub url: Url,
@@ -57,7 +57,7 @@ pub struct Downloads {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
 pub struct DownloadInfo {
-    pub sha1: FileHash,
+    pub sha1: ResourceHash,
     pub size: u64,
     pub url: Url,
 }
@@ -92,7 +92,7 @@ pub struct LibraryDownloads {
 #[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
 pub struct LibraryArtifact {
     pub path: String,
-    pub sha1: FileHash,
+    pub sha1: ResourceHash,
     pub size: u64,
     pub url: Url,
 }
@@ -122,7 +122,7 @@ pub struct LoggingInfo {
 #[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
 pub struct LoggingFile {
     pub id: String,
-    pub sha1: FileHash,
+    pub sha1: ResourceHash,
     pub size: u64,
     pub url: Url,
 }

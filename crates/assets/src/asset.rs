@@ -4,7 +4,7 @@ use serde::Deserialize;
 use thiserror::Error;
 use tokio::io::{AsyncWrite, AsyncWriteExt};
 
-use crate::hash::FileHash;
+use crate::hash::ResourceHash;
 
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
@@ -15,7 +15,7 @@ pub struct AssetIndex {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
 pub struct AssetObject {
-    pub hash: FileHash,
+    pub hash: ResourceHash,
     pub size: u64,
 }
 
@@ -41,8 +41,8 @@ pub enum AssetObjectError {
     ContentLengthMismatch { expected: u64, actual: u64 },
     #[error("Hash mismatch: expected {expected} but got {actual}")]
     HashMismatch {
-        expected: FileHash,
-        actual: FileHash,
+        expected: ResourceHash,
+        actual: ResourceHash,
     },
     #[error("Network error: {0}")]
     NetworkError(#[from] reqwest::Error),
@@ -83,7 +83,7 @@ impl AssetObject {
             });
         }
         let mut content_length = 0;
-        let mut actual_hash = FileHash::digest_chunks();
+        let mut actual_hash = ResourceHash::digest_chunks();
         let mut chunks = Vec::new();
         while let Some(chunk) = response.chunk().await? {
             content_length += chunk.len() as u64;
