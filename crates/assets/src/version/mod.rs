@@ -1,9 +1,12 @@
 use std::collections::HashMap;
 
+use reqwest::IntoUrl;
 use serde::Deserialize;
 use url::Url;
 
 use crate::{
+    asset::AssetIndex,
+    download::{DownloadableManifest, DownloadableResource},
     hash::ResourceHash,
     version::{args::CompatibleArguments, rule::Rule},
 };
@@ -125,4 +128,62 @@ pub struct LoggingFile {
     pub sha1: ResourceHash,
     pub size: u64,
     pub url: Url,
+}
+
+impl DownloadableManifest for AssetInfo {
+    type Resource = AssetIndex;
+
+    fn url(&self) -> impl IntoUrl {
+        self.url.clone()
+    }
+
+    fn size(&self) -> Option<u64> {
+        Some(self.size)
+    }
+
+    fn hash(&self) -> Option<ResourceHash> {
+        Some(self.sha1)
+    }
+}
+
+impl DownloadableResource for DownloadInfo {
+    fn url(&self) -> impl IntoUrl {
+        self.url.clone()
+    }
+
+    fn size(&self) -> Option<u64> {
+        Some(self.size)
+    }
+
+    fn hash(&self) -> Option<ResourceHash> {
+        Some(self.sha1)
+    }
+}
+
+impl DownloadableResource for LibraryArtifact {
+    fn url(&self) -> impl IntoUrl {
+        self.url.clone()
+    }
+
+    fn size(&self) -> Option<u64> {
+        Some(self.size)
+    }
+
+    fn hash(&self) -> Option<ResourceHash> {
+        Some(self.sha1)
+    }
+}
+
+impl DownloadableResource for LoggingFile {
+    fn url(&self) -> impl IntoUrl {
+        self.url.clone()
+    }
+
+    fn size(&self) -> Option<u64> {
+        Some(self.size)
+    }
+
+    fn hash(&self) -> Option<ResourceHash> {
+        Some(self.sha1)
+    }
 }

@@ -1,14 +1,16 @@
 use std::{error::Error, fs, path::PathBuf};
 
-use assets::asset::AssetIndex;
-use assets::{manifest::VersionManifest, version::VersionInfo};
+use assets::download::ResourceDownloader;
+use assets::manifest::VersionManifest;
+use assets::version::VersionInfo;
+use reqwest::Client;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
-use url::Url;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let manifest = VersionManifest::fetch().await?;
+    let downloader = ResourceDownloader::new(Client::new());
+    let manifest = downloader.fetch(&VersionManifest::fetch_source()).await?;
     let latest_release = manifest.latest_release().unwrap();
     let base_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("examples");
     fs::create_dir_all(&base_path).unwrap();
@@ -17,7 +19,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .error_for_status()?
         .json::<VersionInfo>()
         .await?;
-    let asset_index = request_asset_index(version_info.asset_index.url).await?;
+    let asset_index = downloader.fetch(&version_info.asset_index).await?;
     let mut file = File::options()
         .write(true)
         .create(true)
@@ -30,7 +32,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
     if base_path.exists() {
         fs::remove_dir_all(&base_path)?;
     }
-    let client = reqwest::Client::new();
     for object in asset_index.objects() {
         let base_path = base_path.join(object.hash.prefix());
         fs::create_dir_all(&base_path)?;
@@ -40,29 +41,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             .truncate(true)
             .open(base_path.join(object.hash.to_string()))
             .await?;
-        object.fetch(client.clone(), &mut file).await?;
+        downloader.download(object, &mut file).await?;
     }
     Ok(())
-}
-
-#[cfg(not(feature = "debug"))]
-async fn request_asset_index(version_url: Url) -> Result<AssetIndex, Box<dyn Error>> {
-    Ok(reqwest::get(version_url)
-        .await?
-        .error_for_status()?
-        .json::<AssetIndex>()
-        .await?)
-}
-
-#[cfg(feature = "debug")]
-async fn request_asset_index(version_url: Url) -> Result<AssetIndex, Box<dyn Error>> {
-    let version_info = reqwest::get(version_url.clone())
-        .await?
-        .error_for_status()?
-        .text()
-        .await?;
-    let mut deserializer = serde_json::Deserializer::from_str(&version_info);
-    let version_info: AssetIndex = serde_path_to_error::deserialize(&mut deserializer)
-        .map_err(|e| format!("Failed to deserialize asset index for url:{version_url} {e:?}"))?;
-    Ok(version_info)
 }

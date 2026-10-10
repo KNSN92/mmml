@@ -1,8 +1,8 @@
+use reqwest::IntoUrl;
 use serde::Deserialize;
-use thiserror::Error;
 use url::Url;
 
-use crate::hash::ResourceHash;
+use crate::{download::DownloadableManifest, hash::ResourceHash, version::VersionInfo};
 
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
@@ -42,27 +42,9 @@ pub enum VersionType {
     OldBeta,
 }
 
-#[derive(Debug, Error)]
-pub enum VersionManifestError {
-    #[error("Network error: {0}")]
-    NetworkError(#[from] reqwest::Error),
-}
-
-pub type VersionManifestResult<T> = Result<T, VersionManifestError>;
-
-const VERSION_MANIFEST_URL: &str =
-    "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json";
-
 impl VersionManifest {
-    pub async fn fetch() -> VersionManifestResult<Self> {
-        Self::fetch_with_url(VERSION_MANIFEST_URL).await
-    }
-
-    pub async fn fetch_with_url(url: &str) -> VersionManifestResult<Self> {
-        let response = reqwest::get(url).await?;
-        let response = response.error_for_status()?;
-        let manifest = response.json::<VersionManifest>().await?;
-        Ok(manifest)
+    pub fn fetch_source() -> impl DownloadableManifest<Resource = Self> {
+        VersionManifestSource
     }
 
     pub fn latest_version(&self) -> &LatestVersion {
@@ -85,5 +67,39 @@ impl VersionManifest {
 
     pub fn versions(&self) -> &[Version] {
         &self.versions
+    }
+}
+
+impl DownloadableManifest for Version {
+    type Resource = VersionInfo;
+
+    fn url(&self) -> impl IntoUrl {
+        self.url.clone()
+    }
+
+    fn size(&self) -> Option<u64> {
+        None
+    }
+
+    fn hash(&self) -> Option<ResourceHash> {
+        Some(self.sha1)
+    }
+}
+
+struct VersionManifestSource;
+
+impl DownloadableManifest for VersionManifestSource {
+    type Resource = VersionManifest;
+
+    fn url(&self) -> impl IntoUrl {
+        "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json"
+    }
+
+    fn size(&self) -> Option<u64> {
+        None
+    }
+
+    fn hash(&self) -> Option<ResourceHash> {
+        None
     }
 }

@@ -1,10 +1,12 @@
 use std::{error::Error, fs::File, io::Write, path::PathBuf};
 
-use assets::manifest::VersionManifest;
+use assets::{download::ResourceDownloader, manifest::VersionManifest};
+use reqwest::Client;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let manifest = VersionManifest::fetch().await?;
+    let downloader = ResourceDownloader::new(Client::new());
+    let manifest = downloader.fetch(&VersionManifest::fetch_source()).await?;
     let examples = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("./examples/")
         .canonicalize()?;
