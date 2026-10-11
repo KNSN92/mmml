@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use reqwest::IntoUrl;
 use serde::Deserialize;
 use url::Url;
@@ -8,10 +6,11 @@ use crate::{
     asset::AssetIndex,
     download::{DownloadableManifest, DownloadableResource},
     hash::ResourceHash,
-    version::{args::CompatibleArguments, rule::Rule},
+    version::{args::CompatibleArguments, library::Libraries},
 };
 
 pub mod args;
+pub mod library;
 pub mod rule;
 
 #[derive(Debug, Deserialize)]
@@ -26,7 +25,7 @@ pub struct VersionInfo {
     pub downloads: Downloads,
     pub id: String,
     pub java_version: Option<JavaVersion>,
-    pub libraries: Vec<LibraryInfo>,
+    pub libraries: Libraries,
     pub logging: Option<Loggings>,
     pub main_class: String,
     pub minimum_launcher_version: u32,
@@ -75,39 +74,6 @@ pub struct JavaVersion {
 
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
-pub struct LibraryInfo {
-    pub name: String,
-    pub url: Option<Url>,
-    pub downloads: LibraryDownloads,
-    pub natives: Option<HashMap<String, String>>,
-    pub extract: Option<LibraryExtract>,
-    pub rules: Option<Vec<Rule>>,
-}
-
-#[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
-pub struct LibraryDownloads {
-    pub artifact: Option<LibraryArtifact>,
-    pub classifiers: Option<HashMap<String, LibraryArtifact>>,
-}
-
-#[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
-pub struct LibraryArtifact {
-    pub path: String,
-    pub sha1: ResourceHash,
-    pub size: u64,
-    pub url: Url,
-}
-
-#[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
-pub struct LibraryExtract {
-    pub exclude: Vec<String>,
-}
-
-#[derive(Debug, Deserialize)]
-#[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
 pub struct Loggings {
     pub client: LoggingInfo,
 }
@@ -147,20 +113,6 @@ impl DownloadableManifest for AssetInfo {
 }
 
 impl DownloadableResource for DownloadInfo {
-    fn url(&self) -> impl IntoUrl {
-        self.url.clone()
-    }
-
-    fn size(&self) -> Option<u64> {
-        Some(self.size)
-    }
-
-    fn hash(&self) -> Option<ResourceHash> {
-        Some(self.sha1)
-    }
-}
-
-impl DownloadableResource for LibraryArtifact {
     fn url(&self) -> impl IntoUrl {
         self.url.clone()
     }
