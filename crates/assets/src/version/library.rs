@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, path::PathBuf};
 
 use reqwest::IntoUrl;
 use serde::Deserialize;
@@ -31,7 +31,7 @@ pub struct LibraryDownloads {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
 pub struct LibraryArtifact {
-    pub path: String,
+    pub path: PathBuf,
     pub sha1: ResourceHash,
     pub size: u64,
     pub url: Url,
