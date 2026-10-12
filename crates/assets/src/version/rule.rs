@@ -49,8 +49,8 @@ pub struct OsVersionRange {
 //TODO: Add tests for RuleContext and Rule evaluation~
 pub struct RuleContext {
     features: HashMap<String, bool>,
-    os: Os,
-    arch: Arch,
+    pub(crate) os: Os,
+    pub(crate) arch: Arch,
 }
 
 impl RuleContext {
