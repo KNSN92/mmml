@@ -4,7 +4,7 @@ use reqwest::IntoUrl;
 use serde::Deserialize;
 use url::Url;
 
-use crate::{download::DownloadableResource, hash::ResourceHash, version::rule::Rule};
+use crate::{download::DownloadableResource, hash::ResourceHash, version::rule::{RuleAction, RuleContext, RuleEvalResult, RuleList}};
 
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
@@ -18,7 +18,7 @@ pub struct Library {
     pub downloads: LibraryDownloads,
     pub natives: Option<HashMap<String, String>>,
     pub extract: Option<LibraryExtract>,
-    pub rules: Option<Vec<Rule>>,
+    pub rules: Option<RuleList>,
 }
 
 #[derive(Debug, Deserialize)]

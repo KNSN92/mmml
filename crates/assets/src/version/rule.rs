@@ -7,6 +7,10 @@ use thiserror::Error;
 
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
+pub struct RuleList(Vec<Rule>);
+
+#[derive(Debug, Deserialize)]
+#[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
 pub struct Rule {
     action: RuleAction,
     features: Option<FeatureRule>,
@@ -86,6 +90,18 @@ pub enum RuleEvalError {
 }
 
 pub type RuleEvalResult<T> = std::result::Result<T, RuleEvalError>;
+
+impl RuleList {
+    pub fn apply(&self, context: &RuleContext) -> RuleEvalResult<RuleAction> {
+        let mut action = RuleAction::Disallow;
+        for rule in &self.0 {
+            if let Some(rule_action) = rule.apply(context)? {
+                action = rule_action;
+            }
+        }
+        Ok(action)
+    }
+}
 
 impl Rule {
     pub fn apply(&self, context: &RuleContext) -> RuleEvalResult<Option<RuleAction>> {

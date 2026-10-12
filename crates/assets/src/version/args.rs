@@ -4,7 +4,7 @@ use regex::Regex;
 use serde::Deserialize;
 use thiserror::Error;
 
-use crate::version::rule::{Rule, RuleAction, RuleContext};
+use crate::version::rule::{RuleAction, RuleContext, RuleList};
 
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
@@ -29,7 +29,7 @@ pub struct Arguments {
 pub enum Argument {
     Simple(String),
     Ruled {
-        rules: Option<Vec<Rule>>,
+        rules: Option<RuleList>,
         value: RuledArgumentValue,
     },
 }
@@ -75,16 +75,9 @@ impl Argument {
             Argument::Ruled { rules, value } => (rules, value),
             Argument::Simple(s) => return Ok(vec![resolve_value(s.as_str(), context)?]),
         };
-        let action = if let Some(rules) = rules {
-            let mut action = RuleAction::Disallow;
-            for rule in rules {
-                if let Some(rule_action) = rule.apply(&context.rule_context)? {
-                    action = rule_action;
-                }
-            }
-            action
-        } else {
-            RuleAction::Allow
+        let action = match rules {
+            Some(rules) => rules.apply(&context.rule_context)?,
+            None => RuleAction::Allow
         };
         if action == RuleAction::Allow {
             match value {
