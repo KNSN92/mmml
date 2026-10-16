@@ -1,0 +1,8 @@
+[package]
+name = "safe-path"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+sanitize-filename = "0.6.0"
+thiserror = "2.0.21"

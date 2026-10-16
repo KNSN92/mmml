@@ -1,11 +1,12 @@
 // Special thanks to the Lighty Launcher Lib Developers
 // https://github.com/Lighty-Launcher/LightyLauncherLib
 
-use std::path::{Component, Path, PathBuf};
+use std::path::{Path, PathBuf};
 
 use async_compression::tokio::bufread::GzipDecoder;
 use async_zip::tokio::read::seek::ZipFileReader;
 use futures::StreamExt;
+use safe_path::{SafeJoin, SafeJoinError, SanitizeNew};
 use tokio::{
     fs::{self},
     io::{self, AsyncRead, AsyncSeek, BufReader},
@@ -51,16 +52,16 @@ pub async fn zip_extract(
                 return Err(DecompressError::SizeTooLarge(filesize));
             }
         let filename = entry.filename().as_str()?;
-        let path = sanitize_path(filename);
-        if path.is_absolute() {
-            return Err(DecompressError::AbsolutePath(filename.to_string()));
-        }
-        let path = norm_path(&dest.join(path));
-        if !path.starts_with(&dest) {
-            return Err(DecompressError::PathTraversal(
-                path.to_string_lossy().to_string(),
-            ));
-        }
+        let path = PathBuf::sanitize_new(filename);
+        let path = match dest.safe_join(path) {
+            Ok(path) => path,
+            Err(SafeJoinError::AbsolutePath) => {
+                return Err(DecompressError::AbsolutePath(filename.to_string()));
+            }
+            Err(SafeJoinError::PathTraversal) => {
+                return Err(DecompressError::PathTraversal(filename.to_string()));
+            }
+        };
         if is_dir {
             fs::create_dir_all(&path).await?;
         } else {
@@ -114,26 +115,4 @@ pub async fn tar_gz_extract(
         }
     }
     Ok(())
-}
-
-fn sanitize_path(path: &str) -> PathBuf {
-    path.replace('\\', "/")
-        .split("/")
-        .map(sanitize_filename::sanitize)
-        .collect()
-}
-
-fn norm_path(path: &Path) -> PathBuf {
-    path.components()
-        .fold(PathBuf::new(), |mut path, component| {
-            match component {
-                Component::Normal(seg) => path.push(seg),
-                Component::ParentDir => {
-                    path.pop();
-                }
-                Component::CurDir => {}
-                _ => path.push(component),
-            };
-            path
-        })
 }
