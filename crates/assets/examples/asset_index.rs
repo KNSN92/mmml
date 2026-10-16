@@ -34,14 +34,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     }
     for object in asset_index.objects() {
         let base_path = base_path.join(object.hash.prefix());
-        fs::create_dir_all(&base_path)?;
-        let mut file = File::options()
-            .write(true)
-            .create(true)
-            .truncate(true)
-            .open(base_path.join(object.hash.to_string()))
-            .await?;
-        downloader.download(object, &mut file).await?;
+        downloader.download_to_file(base_path, object).await?;
     }
     Ok(())
 }
