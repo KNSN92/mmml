@@ -1,7 +1,10 @@
+use std::path::Path;
+
 use reqwest::{Client, IntoUrl};
+use safe_path::SafeJoin;
 use serde::de::DeserializeOwned;
 use thiserror::Error;
-use tokio::io::{AsyncWrite, AsyncWriteExt};
+use tokio::{fs::{self, OpenOptions}, io::{AsyncWrite, AsyncWriteExt}};
 
 use crate::hash::ResourceHash;
 
@@ -20,6 +23,8 @@ pub enum ResourceDownloadError {
     #[cfg(feature = "debug")]
     #[error("Deserialization error: {0}")]
     DeserializationError(#[from] serde_path_to_error::Error<serde_json::Error>),
+    #[error("Safe join error: {0}")]
+    SafeJoinError(#[from] safe_path::SafeJoinError),
     #[error("Network error: {0}")]
     NetworkError(#[from] reqwest::Error),
     #[error("IO error: {0}")]
@@ -32,6 +37,9 @@ pub trait DownloadableResource {
     fn url(&self) -> impl IntoUrl;
     fn size(&self) -> Option<u64>;
     fn hash(&self) -> Option<ResourceHash>;
+}
+pub trait DownloadableFile: DownloadableResource {
+    fn path(&self) -> impl AsRef<Path>;
 }
 pub trait DownloadableManifest {
     type Resource: DeserializeOwned;
@@ -191,6 +199,25 @@ impl ResourceDownloader {
             writer.write_all(&chunk).await?;
         }
         writer.flush().await?;
+        Ok(())
+    }
+
+    pub async fn download_to_file(
+        &self,
+        base_path: impl AsRef<Path>,
+        resource: &impl DownloadableFile,
+    ) -> ResourceDownloadResult<()> {
+        let path = base_path.as_ref().safe_join(resource.path().as_ref())?;
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent).await?;
+        }
+        let file = OpenOptions::new()
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(path)
+            .await?;
+        self.download(resource, file).await?;
         Ok(())
     }
 }

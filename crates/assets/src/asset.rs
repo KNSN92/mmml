@@ -4,7 +4,7 @@ use reqwest::IntoUrl;
 use serde::Deserialize;
 use thiserror::Error;
 
-use crate::{download::DownloadableResource, hash::ResourceHash};
+use crate::{download::{DownloadableFile, DownloadableResource}, hash::ResourceHash};
 
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
@@ -67,5 +67,11 @@ impl DownloadableResource for AssetObject {
 
     fn hash(&self) -> Option<ResourceHash> {
         Some(self.hash)
+    }
+}
+
+impl DownloadableFile for AssetObject {
+    fn path(&self) -> impl AsRef<std::path::Path> {
+        format!("{}/{}", self.hash.prefix(), self.hash.to_string())
     }
 }

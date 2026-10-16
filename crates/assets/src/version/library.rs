@@ -1,4 +1,4 @@
-use std::{collections::HashMap, path::PathBuf};
+use std::{collections::HashMap, path::{Path, PathBuf}};
 
 use platform::Os;
 use reqwest::IntoUrl;
@@ -6,7 +6,7 @@ use serde::Deserialize;
 use thiserror::Error;
 use url::Url;
 
-use crate::{download::DownloadableResource, hash::ResourceHash, version::rule::{RuleAction, RuleContext, RuleEvalError, RuleList}};
+use crate::{download::{DownloadableFile, DownloadableResource}, hash::ResourceHash, version::rule::{RuleAction, RuleContext, RuleEvalError, RuleList}};
 
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
@@ -58,6 +58,14 @@ impl DownloadableResource for LibraryArtifact {
         Some(self.sha1)
     }
 }
+
+impl DownloadableFile for LibraryArtifact {
+    fn path(&self) -> impl AsRef<Path> {
+        &self.path
+    }
+}
+
+
 
 #[derive(Debug, Error)]
 pub enum LibraryResolutionError {
