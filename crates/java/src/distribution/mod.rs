@@ -1,6 +1,6 @@
 use std::{
     io::{self, Write},
-    path::{Path, PathBuf},
+    path::PathBuf,
 };
 
 use platform::Os;
@@ -42,7 +42,11 @@ pub trait JavaDistribution {
     fn is_version_supported(version: u8) -> bool;
     fn is_installed(&self) -> impl Future<Output = JavaDistributionResult<bool>> + Send;
     fn install(&self) -> impl Future<Output = JavaDistributionResult<()>> + Send;
-    fn runtime(&self) -> JavaDistributionResult<JavaRuntime>;
+    fn java_path(&self) -> JavaDistributionResult<PathBuf>;
+    fn runtime(&self) -> JavaDistributionResult<JavaRuntime> {
+        let java_path = self.java_path()?;
+        Ok(JavaRuntime::new(java_path))
+    }
 }
 
 pub(crate) struct InstallableJavaDistributionBase {
@@ -87,10 +91,5 @@ impl InstallableJavaDistributionBase {
         fs::rename(extracted_archive_dir, &self.path).await?;
 
         Ok(())
-    }
-
-    pub fn runtime(&self, extra_path: impl AsRef<Path>) -> JavaDistributionResult<JavaRuntime> {
-        let path = self.path.join(extra_path);
-        Ok(JavaRuntime::new(path))
     }
 }

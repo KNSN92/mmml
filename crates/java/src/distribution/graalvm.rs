@@ -16,16 +16,6 @@ impl GraalVMDistribution {
             version,
         })
     }
-
-    fn bin_path(&self) -> JavaDistributionResult<PathBuf> {
-        let path = match Os::current() {
-            Os::Windows => self.0.path.join("./bin/java.exe"),
-            Os::MacOS => self.0.path.join("./Contents/Home/bin/java"),
-            Os::Linux => self.0.path.join("./bin/java"),
-            _ => return Err(JavaDistributionError::UnsupportedPlatform),
-        };
-        Ok(path)
-    }
 }
 
 impl JavaDistribution for GraalVMDistribution {
@@ -34,7 +24,7 @@ impl JavaDistribution for GraalVMDistribution {
     }
 
     async fn is_installed(&self) -> JavaDistributionResult<bool> {
-        Ok(self.bin_path()?.exists())
+        Ok(self.java_path()?.exists())
     }
 
     async fn install(&self) -> JavaDistributionResult<()> {
@@ -75,7 +65,13 @@ impl JavaDistribution for GraalVMDistribution {
         self.0.install(url).await
     }
 
-    fn runtime(&self) -> JavaDistributionResult<crate::JavaRuntime> {
-        self.0.runtime(self.bin_path()?)
+    fn java_path(&self) -> JavaDistributionResult<PathBuf> {
+        let path = match Os::current() {
+            Os::Windows => self.0.path.join("./bin/java.exe"),
+            Os::MacOS => self.0.path.join("./Contents/Home/bin/java"),
+            Os::Linux => self.0.path.join("./bin/java"),
+            _ => return Err(JavaDistributionError::UnsupportedPlatform),
+        };
+        Ok(path)
     }
 }
