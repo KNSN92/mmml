@@ -11,7 +11,7 @@ pub struct RuleList(Vec<Rule>);
 
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
-pub struct Rule {
+struct Rule {
     action: RuleAction,
     features: Option<FeatureRule>,
     os: Option<OsRule>,
@@ -25,12 +25,12 @@ pub enum RuleAction {
     Disallow,
 }
 
-pub type FeatureRule = HashMap<String, bool>;
+type FeatureRule = HashMap<String, bool>;
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
-pub struct OsRule {
+struct OsRule {
     name: Option<String>,
     version: Option<String>,
     #[allow(unused, reason = "todo")]
@@ -41,7 +41,7 @@ pub struct OsRule {
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
 #[allow(unused, reason = "todo")]
-pub struct OsVersionRange {
+struct OsVersionRange {
     min: Option<String>,
     max: Option<String>,
 }
@@ -124,7 +124,7 @@ impl RuleList {
 }
 
 impl Rule {
-    pub fn apply(&self, context: &RuleContext) -> RuleEvalResult<Option<RuleAction>> {
+    fn apply(&self, context: &RuleContext) -> RuleEvalResult<Option<RuleAction>> {
         if self.matches(context)? {
             Ok(Some(self.action))
         } else {
@@ -132,7 +132,7 @@ impl Rule {
         }
     }
 
-    pub fn matches(&self, context: &RuleContext) -> RuleEvalResult<bool> {
+    fn matches(&self, context: &RuleContext) -> RuleEvalResult<bool> {
         if let Some(expected_features) = &self.features {
             for (feature, &expected) in expected_features.iter() {
                 let actual = *context

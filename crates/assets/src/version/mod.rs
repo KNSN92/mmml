@@ -6,12 +6,21 @@ use crate::{
     asset::AssetIndex,
     download::{DownloadableManifest, DownloadableResource},
     hash::ResourceHash,
-    version::{args::CompatibleArguments, library::Libraries},
 };
 
 pub mod args;
 pub mod library;
 pub mod rule;
+
+pub use args::{
+    Argument, ArgumentResolutionError, Arguments, CompatibleArguments, ResolvedArguments,
+    RuledArgumentValue,
+};
+pub use library::{
+    Libraries, Library, LibraryArtifact, LibraryDownloads, LibraryExtract, LibraryResolutionError,
+    ResolvedLibrary,
+};
+pub use rule::{RuleAction, RuleContext, RuleEvalError, RuleList};
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]

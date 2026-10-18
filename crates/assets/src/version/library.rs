@@ -18,7 +18,7 @@ use crate::{
 
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
-pub struct Libraries(pub Vec<Library>);
+pub struct Libraries(Vec<Library>);
 
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "debug", serde(deny_unknown_fields))]

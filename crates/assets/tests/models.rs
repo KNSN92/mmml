@@ -30,7 +30,6 @@ fn version_info_json(arguments_field: &str) -> String {
 #[test]
 fn version_manifest_supports_latest_lookup_and_find() {
     let manifest: VersionManifest = serde_json::from_str(&version_manifest_json()).unwrap();
-    let _ = manifest.latest_version();
     assert_eq!(
         manifest.latest_release().unwrap().version_type,
         VersionType::Release

@@ -13,7 +13,7 @@ pub struct VersionManifest {
 
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
-pub struct LatestVersion {
+struct LatestVersion {
     release: String,
     snapshot: String,
 }
@@ -45,10 +45,6 @@ pub enum VersionType {
 impl VersionManifest {
     pub fn fetch_source() -> impl DownloadableManifest<Resource = Self> {
         VersionManifestSource
-    }
-
-    pub fn latest_version(&self) -> &LatestVersion {
-        &self.latest
     }
 
     pub fn latest_release(&self) -> Option<&Version> {
