@@ -160,3 +160,109 @@ impl Library {
         Ok(Some(artifacts))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::path::Path;
+
+    use platform::{Arch, Os};
+
+    use crate::{variable::VariableResolver, version::rule::RuleContext};
+
+    use super::{Libraries, LibraryResolutionError};
+
+    fn ctx(os: Os) -> RuleContext {
+        RuleContext::with_platform(os, Arch::X64, [])
+    }
+
+    fn vars() -> VariableResolver {
+        VariableResolver::new([("arch".to_string(), "64".to_string())])
+    }
+
+    fn parse(json: &str) -> Libraries {
+        serde_json::from_str(json).unwrap()
+    }
+
+    const ARTIFACT: &str = r#"{"path":"org/example/demo/1/demo-1.jar","sha1":"a9993e364706816aba3e25717850c26c9cd0d89d","size":3,"url":"https://example.invalid/demo.jar"}"#;
+
+    #[test]
+    fn resolves_plain_and_os_allowed_libraries_and_retains_extract_metadata() {
+        let libraries = parse(&format!(
+            r#"[
+              {{"name":"org.example:plain:1","downloads":{{"artifact":{ARTIFACT}}}}},
+              {{"name":"org.example:linux:1","downloads":{{"artifact":{ARTIFACT}}},"rules":[{{"action":"allow","os":{{"name":"linux"}}}}],"extract":{{"exclude":["META-INF/"]}}}}
+            ]"#
+        ));
+        let resolved = libraries.resolve(&ctx(Os::Linux), &vars()).unwrap();
+        assert_eq!(resolved.len(), 2);
+        assert_eq!(resolved[1].name, "org.example:linux:1");
+        assert_eq!(resolved[1].extract.unwrap().exclude, ["META-INF/"]);
+        assert_eq!(
+            resolved[1].artifact.unwrap().path,
+            Path::new("org/example/demo/1/demo-1.jar")
+        );
+    }
+
+    #[test]
+    fn resolves_native_classifier_and_skips_library_for_nonmatching_rule() {
+        let libraries = parse(&format!(
+            r#"[
+              {{"name":"org.example:native:1","downloads":{{"artifact":{ARTIFACT},"classifiers":{{"natives-linux-64":{ARTIFACT}}}}},"natives":{{"linux":"natives-linux-${{arch}}"}}}},
+              {{"name":"org.example:windows:1","downloads":{{"artifact":{ARTIFACT}}},"rules":[{{"action":"allow","os":{{"name":"windows"}}}}]}}
+            ]"#
+        ));
+        let resolved = libraries.resolve(&ctx(Os::Linux), &vars()).unwrap();
+        assert_eq!(resolved.len(), 1);
+        assert_eq!(
+            resolved[0].native.unwrap().path,
+            Path::new("org/example/demo/1/demo-1.jar")
+        );
+    }
+
+    #[test]
+    fn unsupported_os_returns_library_without_native_artifact() {
+        let libraries = parse(&format!(
+            r#"[{{"name":"org.example:native:1","downloads":{{"artifact":{ARTIFACT}}},"natives":{{"linux":"natives-linux-${{arch}}"}}}}]"#
+        ));
+        let resolved = libraries
+            .resolve(&ctx(Os::Other("haiku")), &vars())
+            .unwrap();
+        assert_eq!(resolved.len(), 1);
+        assert!(resolved[0].native.is_none());
+    }
+
+    #[test]
+    fn reports_missing_classifier_and_unresolved_classifier_variable() {
+        let no_classifiers = parse(&format!(
+            r#"[{{"name":"org.example:native:1","downloads":{{"artifact":{ARTIFACT}}},"natives":{{"linux":"natives-linux-${{arch}}"}}}}]"#
+        ));
+        assert!(matches!(
+            no_classifiers.resolve(&ctx(Os::Linux), &vars()),
+            Err(LibraryResolutionError::MissingClassifier(None))
+        ));
+
+        let classifiers = parse(&format!(
+            r#"[{{"name":"org.example:native:1","downloads":{{"artifact":{ARTIFACT},"classifiers":{{}}}},"natives":{{"linux":"natives-linux-${{arch}}"}}}}]"#
+        ));
+        assert!(matches!(
+            classifiers.resolve(&ctx(Os::Linux), &vars()),
+            Err(LibraryResolutionError::MissingClassifier(Some(_)))
+        ));
+        let missing_var = VariableResolver::new([]);
+        assert!(matches!(
+            classifiers.resolve(&ctx(Os::Linux), &missing_var),
+            Err(LibraryResolutionError::VariableNotFound(_))
+        ));
+    }
+
+    #[test]
+    fn propagates_invalid_rule_values() {
+        let libraries = parse(&format!(
+            r#"[{{"name":"org.example:bad:1","downloads":{{"artifact":{ARTIFACT}}},"rules":[{{"action":"allow","os":{{"name":"unknown-os"}}}}]}}]"#
+        ));
+        assert!(matches!(
+            libraries.resolve(&ctx(Os::Linux), &vars()),
+            Err(LibraryResolutionError::RuleEvalError(_))
+        ));
+    }
+}

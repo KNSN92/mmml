@@ -38,3 +38,39 @@ impl VariableResolver {
         Ok(new)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{VariableNotFoundError, VariableResolver};
+
+    #[test]
+    fn resolves_multiple_and_repeated_variables() {
+        let resolver = VariableResolver::new([
+            ("name".to_string(), "Alex".to_string()),
+            ("version".to_string(), "26.1".to_string()),
+        ]);
+        assert_eq!(
+            resolver.resolve("${name}-${version}-${name}").unwrap(),
+            "Alex-26.1-Alex"
+        );
+    }
+
+    #[test]
+    fn leaves_plain_text_and_malformed_placeholders_unchanged() {
+        let resolver = VariableResolver::new([("ok".to_string(), "yes".to_string())]);
+        assert_eq!(resolver.resolve("no variables").unwrap(), "no variables");
+        assert_eq!(
+            resolver.resolve("${ok} ${bad-name} ${unfinished").unwrap(),
+            "yes ${bad-name} ${unfinished"
+        );
+    }
+
+    #[test]
+    fn reports_the_first_unresolved_variable() {
+        let resolver = VariableResolver::new([("known".to_string(), "value".to_string())]);
+        assert!(matches!(
+            resolver.resolve("${known} ${missing}"),
+            Err(VariableNotFoundError(name)) if name == "missing"
+        ));
+    }
+}

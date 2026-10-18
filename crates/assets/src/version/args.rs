@@ -168,3 +168,87 @@ impl CompatibleArguments {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use platform::{Arch, Os};
+
+    use crate::{variable::VariableResolver, version::rule::RuleContext};
+
+    use super::{ArgumentResolutionError, CompatibleArguments};
+
+    fn ctx() -> RuleContext {
+        RuleContext::with_platform(Os::Linux, Arch::X64, [("demo".to_string(), false)])
+    }
+
+    fn vars() -> VariableResolver {
+        VariableResolver::new([
+            ("name".to_string(), "Player One".to_string()),
+            ("version".to_string(), "26.1".to_string()),
+        ])
+    }
+
+    #[test]
+    fn resolves_structured_arguments_and_default_user_jvm() {
+        let arguments: CompatibleArguments = serde_json::from_str(
+            r#"{
+              "default-user-jvm":["-Xmx4G"],
+              "game":["--username", "${name}", {"rules":[{"action":"allow","os":{"name":"linux"}}],"value":["--linux", "yes"]}, {"rules":[{"action":"allow","features":{"demo":false}}],"value":"--not-demo"}],
+              "jvm":["-Dversion=${version}"]
+            }"#,
+        )
+        .unwrap();
+        let resolved = arguments.resolve(&ctx(), &vars()).unwrap();
+        assert_eq!(resolved.default_user_jvm, ["-Xmx4G"]);
+        assert_eq!(
+            resolved.game,
+            ["--username", "Player One", "--linux", "yes", "--not-demo"]
+        );
+        assert_eq!(resolved.jvm, ["-Dversion=26.1"]);
+    }
+
+    #[test]
+    fn resolves_legacy_text_by_whitespace_before_variable_replacement() {
+        let arguments: CompatibleArguments =
+            serde_json::from_str(r#""--username ${name} --version ${version}""#).unwrap();
+        let resolved = arguments.resolve(&ctx(), &vars()).unwrap();
+        assert!(resolved.default_user_jvm.is_empty());
+        assert!(resolved.jvm.is_empty());
+        assert_eq!(
+            resolved.game,
+            ["--username", "Player One", "--version", "26.1"]
+        );
+    }
+
+    #[test]
+    fn omits_optional_default_user_jvm_when_absent() {
+        let arguments: CompatibleArguments =
+            serde_json::from_str(r#"{"game":[],"jvm":[]}"#).unwrap();
+        assert!(
+            arguments
+                .resolve(&ctx(), &vars())
+                .unwrap()
+                .default_user_jvm
+                .is_empty()
+        );
+    }
+
+    #[test]
+    fn propagates_missing_variable_and_rule_context_errors() {
+        let arguments: CompatibleArguments =
+            serde_json::from_str(r#"{"game":["${missing}"],"jvm":[]}"#).unwrap();
+        assert!(matches!(
+            arguments.resolve(&ctx(), &vars()),
+            Err(ArgumentResolutionError::VariableNotFound(_))
+        ));
+
+        let arguments: CompatibleArguments = serde_json::from_str(
+            r#"{"game":[{"rules":[{"action":"allow","features":{"unknown":true}}],"value":"--flag"}],"jvm":[]}"#,
+        )
+        .unwrap();
+        assert!(matches!(
+            arguments.resolve(&ctx(), &vars()),
+            Err(ArgumentResolutionError::RuleEval(_))
+        ));
+    }
+}

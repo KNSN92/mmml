@@ -51,6 +51,8 @@ pub struct RuleContext {
     features: HashMap<String, bool>,
     pub(crate) os: Os,
     pub(crate) arch: Arch,
+    #[cfg(test)]
+    os_version_override: Option<String>,
 }
 
 impl RuleContext {
@@ -59,6 +61,8 @@ impl RuleContext {
             features: features.into_iter().collect(),
             os: Os::current(),
             arch: Arch::current(),
+            #[cfg(test)]
+            os_version_override: None,
         }
     }
 
@@ -71,7 +75,23 @@ impl RuleContext {
             features: features.into_iter().collect(),
             os,
             arch,
+            #[cfg(test)]
+            os_version_override: None,
         }
+    }
+
+    fn os_version(&self) -> Option<&str> {
+        #[cfg(test)]
+        if let Some(version) = self.os_version_override.as_deref() {
+            return Some(version);
+        }
+        self.os.version()
+    }
+
+    #[cfg(test)]
+    fn with_os_version(mut self, version: impl Into<String>) -> Self {
+        self.os_version_override = Some(version.into());
+        self
     }
 }
 
@@ -148,8 +168,7 @@ impl OsRule {
         }
         if let Some(version) = self.version.as_deref() {
             let actual_version = context
-                .os
-                .version()
+                .os_version()
                 .ok_or_else(|| RuleEvalError::CannotGetOsVersion)?;
             if !Regex::new(version)?.is_match(actual_version) {
                 return Ok(false);
@@ -169,5 +188,114 @@ impl OsRule {
             }
         }
         Ok(true)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use platform::{Arch, Os};
+
+    use super::{RuleAction, RuleContext, RuleEvalError, RuleList};
+
+    fn rules(json: &str) -> RuleList {
+        serde_json::from_str(json).unwrap()
+    }
+
+    fn context() -> RuleContext {
+        RuleContext::with_platform(Os::Windows, Arch::X64, [("demo".to_string(), true)])
+            .with_os_version("10.0.19045")
+    }
+
+    #[test]
+    fn rule_list_defaults_to_disallow_and_empty_list_stays_disallowed() {
+        assert_eq!(rules("[]").apply(&context()).unwrap(), RuleAction::Disallow);
+        assert_eq!(
+            rules(r#"[{"action":"disallow"}]"#)
+                .apply(&context())
+                .unwrap(),
+            RuleAction::Disallow
+        );
+    }
+
+    #[test]
+    fn last_matching_rule_wins_and_nonmatching_rules_are_ignored() {
+        let ctx = context();
+        assert_eq!(
+            rules(r#"[{"action":"allow"},{"action":"disallow"}]"#)
+                .apply(&ctx)
+                .unwrap(),
+            RuleAction::Disallow
+        );
+        assert_eq!(
+            rules(r#"[{"action":"allow"},{"action":"disallow","os":{"name":"linux"}}]"#)
+                .apply(&ctx)
+                .unwrap(),
+            RuleAction::Allow
+        );
+        assert_eq!(
+            rules(r#"[{"action":"allow","os":{"name":"linux"}}]"#)
+                .apply(&ctx)
+                .unwrap(),
+            RuleAction::Disallow
+        );
+    }
+
+    #[test]
+    fn matches_os_arch_features_and_os_version_regex() {
+        let ctx = context();
+        assert_eq!(
+            rules(r#"[{"action":"allow","features":{"demo":true},"os":{"name":"windows","arch":"x64","version":"10\\.0\\.19.*"}}]"#)
+                .apply(&ctx)
+                .unwrap(),
+            RuleAction::Allow
+        );
+        assert_eq!(
+            rules(r#"[{"action":"allow","os":{"name":"windows","arch":"x86","version":"10\\.0\\.19.*"}}]"#)
+                .apply(&ctx)
+                .unwrap(),
+            RuleAction::Disallow
+        );
+        assert_eq!(
+            rules(r#"[{"action":"allow","os":{"name":"windows","version":"^11\\."}}]"#)
+                .apply(&ctx)
+                .unwrap(),
+            RuleAction::Disallow
+        );
+        assert_eq!(
+            rules(r#"[{"action":"allow","features":{"demo":false}}]"#)
+                .apply(&ctx)
+                .unwrap(),
+            RuleAction::Disallow
+        );
+    }
+
+    #[test]
+    fn reports_unknown_features_os_arch_and_invalid_regex() {
+        assert!(matches!(
+            rules(r#"[{"action":"allow","features":{"missing":true}}]"#).apply(&context()),
+            Err(RuleEvalError::FeatureNotFound(name)) if name == "missing"
+        ));
+        assert!(matches!(
+            rules(r#"[{"action":"allow","os":{"name":"plan9"}}]"#).apply(&context()),
+            Err(RuleEvalError::UnknownOsName(name)) if name == "plan9"
+        ));
+        assert!(matches!(
+            rules(r#"[{"action":"allow","os":{"arch":"mips"}}]"#).apply(&context()),
+            Err(RuleEvalError::UnknownArch(name)) if name == "mips"
+        ));
+        assert!(matches!(
+            rules(r#"[{"action":"allow","os":{"version":"["}}]"#).apply(&context()),
+            Err(RuleEvalError::InvalidRegex(_))
+        ));
+    }
+
+    #[test]
+    fn reports_missing_os_version_when_context_cannot_supply_it() {
+        let ctx = RuleContext::with_platform(Os::Other("other"), Arch::X64, []);
+        let rule = rules(r#"[{"action":"allow","os":{"version":".*"}}]"#);
+        assert!(matches!(
+            rule.apply(&ctx),
+            Err(RuleEvalError::CannotGetOsVersion)
+        ));
     }
 }
