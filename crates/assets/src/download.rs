@@ -3,8 +3,12 @@ use std::path::Path;
 use reqwest::{Client, IntoUrl};
 use safe_path::SafeJoin;
 use serde::de::DeserializeOwned;
+use tempfile::NamedTempFile;
 use thiserror::Error;
-use tokio::{fs::{self, OpenOptions}, io::{AsyncWrite, AsyncWriteExt}};
+use tokio::{
+    fs,
+    io::{AsyncWrite, AsyncWriteExt},
+};
 
 use crate::hash::ResourceHash;
 
@@ -211,13 +215,13 @@ impl ResourceDownloader {
         if let Some(parent) = path.parent() {
             fs::create_dir_all(parent).await?;
         }
-        let file = OpenOptions::new()
-            .write(true)
-            .create(true)
-            .truncate(true)
-            .open(path)
-            .await?;
-        self.download(resource, file).await?;
+        let parent = path.parent().unwrap_or_else(|| Path::new("."));
+        let temporary = NamedTempFile::new_in(parent)?;
+        let mut file = fs::File::from_std(temporary.reopen()?);
+        self.download(resource, &mut file).await?;
+        file.sync_all().await?;
+        drop(file);
+        temporary.persist(&path).map_err(|e| e.error)?;
         Ok(())
     }
 }
