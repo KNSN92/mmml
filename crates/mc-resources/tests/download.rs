@@ -6,8 +6,8 @@ use std::{
 };
 
 #[cfg(feature = "debug")]
-use assets::manifest::VersionManifest;
-use assets::{
+use mc_resources::manifest::VersionManifest;
+use mc_resources::{
     download::{
         DownloadableFile, DownloadableManifest, DownloadableResource, ResourceDownloadError,
         ResourceDownloader,

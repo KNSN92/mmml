@@ -1,6 +1,6 @@
 use std::{error::Error, fs, path::PathBuf};
 
-use assets::{
+use mc_resources::{
     download::ResourceDownloader,
     manifest::VersionManifest,
     variable::VariableResolver,

@@ -1,8 +1,8 @@
 use std::{error::Error, fs, path::PathBuf};
 
-use assets::download::ResourceDownloader;
-use assets::manifest::VersionManifest;
-use assets::version::VersionInfo;
+use mc_resources::download::ResourceDownloader;
+use mc_resources::manifest::VersionManifest;
+use mc_resources::version::VersionInfo;
 use reqwest::Client;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;

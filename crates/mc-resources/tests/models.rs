@@ -1,4 +1,4 @@
-use assets::{
+use mc_resources::{
     asset::AssetIndex,
     manifest::{VersionManifest, VersionType},
     version::VersionInfo,
@@ -63,7 +63,7 @@ fn version_info_accepts_legacy_alias_and_structured_arguments() {
         serde_json::from_str(&version_info_json("minecraftArguments")).unwrap();
     assert!(matches!(
         legacy.arguments,
-        Some(assets::version::args::CompatibleArguments::Text(_))
+        Some(mc_resources::version::args::CompatibleArguments::Text(_))
     ));
 
     let structured_json = version_info_json("arguments").replace(
@@ -73,7 +73,7 @@ fn version_info_accepts_legacy_alias_and_structured_arguments() {
     let structured: VersionInfo = serde_json::from_str(&structured_json).unwrap();
     assert!(matches!(
         structured.arguments,
-        Some(assets::version::args::CompatibleArguments::Structured(_))
+        Some(mc_resources::version::args::CompatibleArguments::Structured(_))
     ));
     assert_eq!(structured.downloads.client.size, 3);
     assert!(structured.java_version.is_none());

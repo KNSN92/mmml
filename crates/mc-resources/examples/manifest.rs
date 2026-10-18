@@ -1,6 +1,6 @@
 use std::{error::Error, fs::File, io::Write, path::PathBuf};
 
-use assets::{download::ResourceDownloader, manifest::VersionManifest};
+use mc_resources::{download::ResourceDownloader, manifest::VersionManifest};
 use reqwest::Client;
 
 #[tokio::main]
