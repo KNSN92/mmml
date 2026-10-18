@@ -12,6 +12,7 @@ use url::Url;
 use crate::{
     download::{DownloadableFile, DownloadableResource},
     hash::ResourceHash,
+    variable::{VariableNotFoundError, VariableResolver},
     version::rule::{RuleAction, RuleContext, RuleEvalError, RuleList},
 };
 
@@ -80,6 +81,8 @@ pub enum LibraryResolutionError {
     MissingClassifier(Option<String>),
     #[error("Rule evaluation error: {0}")]
     RuleEvalError(#[from] RuleEvalError),
+    #[error("Variable not found: {0}")]
+    VariableNotFound(#[from] VariableNotFoundError),
 }
 
 pub type LibraryResolutionResult<T> = Result<T, LibraryResolutionError>;
@@ -95,11 +98,12 @@ pub struct ResolvedLibrary<'a> {
 impl Libraries {
     pub fn resolve(
         &self,
-        context: &RuleContext,
+        rule_ctx: &RuleContext,
+        var_resolver: &VariableResolver,
     ) -> LibraryResolutionResult<Vec<ResolvedLibrary<'_>>> {
         let mut libraries = Vec::new();
         for library in &self.0 {
-            let Some(resolved) = library.resolve(context)? else {
+            let Some(resolved) = library.resolve(rule_ctx, var_resolver)? else {
                 continue;
             };
             libraries.push(resolved);
@@ -111,10 +115,11 @@ impl Libraries {
 impl Library {
     pub fn resolve(
         &self,
-        context: &RuleContext,
+        rule_ctx: &RuleContext,
+        var_resolver: &VariableResolver,
     ) -> LibraryResolutionResult<Option<ResolvedLibrary<'_>>> {
         let action = match &self.rules {
-            Some(rules) => rules.apply(context)?,
+            Some(rules) => rules.apply(rule_ctx)?,
             None => RuleAction::Allow,
         };
         if action == RuleAction::Disallow {
@@ -132,19 +137,20 @@ impl Library {
             return Ok(Some(artifacts));
         };
 
-        let os_name = match context.os {
+        let os_name = match rule_ctx.os {
             Os::Windows => "windows",
             Os::MacOS => "osx",
             Os::Linux => "linux",
-            _ => return Err(LibraryResolutionError::UnsupportedOs(context.os)),
+            _ => return Err(LibraryResolutionError::UnsupportedOs(rule_ctx.os)),
         };
         let Some(needed_classifier) = natives.get(os_name).map(String::as_str) else {
             return Ok(Some(artifacts));
         };
+        let needed_classifier = var_resolver.resolve(needed_classifier)?;
         let Some(classifiers) = &self.downloads.classifiers else {
             return Err(LibraryResolutionError::MissingClassifier(None));
         };
-        match classifiers.get(needed_classifier) {
+        match classifiers.get(&needed_classifier) {
             Some(artifact) => artifacts.native = Some(artifact),
             None => {
                 return Err(LibraryResolutionError::MissingClassifier(Some(

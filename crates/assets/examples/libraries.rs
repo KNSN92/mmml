@@ -3,6 +3,7 @@ use std::{error::Error, fs, path::PathBuf};
 use assets::{
     download::ResourceDownloader,
     manifest::VersionManifest,
+    variable::VariableResolver,
     version::{library::LibraryArtifact, rule::RuleContext},
 };
 use reqwest::Client;
@@ -15,7 +16,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .fetch(version_manifest.latest_release().unwrap())
         .await?;
     let rule_ctx = RuleContext::new([]);
-    let libraries = version_info.libraries.resolve(&rule_ctx)?;
+    let libraries = version_info
+        .libraries
+        .resolve(&rule_ctx, &VariableResolver::new([]))?;
     println!("Resolved artifacts:");
     for library in &libraries {
         if let Some(artifact) = library.artifact {

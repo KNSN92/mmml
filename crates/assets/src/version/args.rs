@@ -1,10 +1,10 @@
-use std::{collections::HashMap, sync::LazyLock};
-
-use regex::Regex;
 use serde::Deserialize;
 use thiserror::Error;
 
-use crate::version::rule::{RuleAction, RuleContext, RuleList};
+use crate::{
+    variable::{VariableNotFoundError, VariableResolver},
+    version::rule::{RuleAction, RuleContext, RuleEvalError, RuleList},
+};
 
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
@@ -42,76 +42,46 @@ pub enum RuledArgumentValue {
     Multiple(Vec<String>),
 }
 
-pub struct ArgumentsContext {
-    variables: HashMap<String, String>,
-    rule_context: RuleContext,
-}
-
-impl ArgumentsContext {
-    pub fn new(
-        variables: impl IntoIterator<Item = (String, String)>,
-        rule_context: RuleContext,
-    ) -> Self {
-        Self {
-            variables: variables.into_iter().collect(),
-            rule_context,
-        }
-    }
-}
-
 #[derive(Debug, Error)]
 pub enum ArgumentResolutionError {
     #[error("Rule evaluation failed: {0}")]
-    RuleEval(#[from] crate::version::rule::RuleEvalError),
+    RuleEval(#[from] RuleEvalError),
     #[error("Variable not found: {0}")]
-    VariableNotFound(String),
+    VariableNotFound(#[from] VariableNotFoundError),
 }
 
 pub type ArgumentResolutionResult<T> = Result<T, ArgumentResolutionError>;
 
 impl Argument {
-    pub fn resolve(&self, context: &ArgumentsContext) -> ArgumentResolutionResult<Vec<String>> {
+    pub fn resolve(
+        &self,
+        rule_ctx: &RuleContext,
+        var_resolver: &VariableResolver,
+    ) -> ArgumentResolutionResult<Vec<String>> {
         let (rules, value) = match self {
             Argument::Ruled { rules, value } => (rules, value),
-            Argument::Simple(s) => return Ok(vec![resolve_value(s.as_str(), context)?]),
+            Argument::Simple(s) => return Ok(vec![var_resolver.resolve(s)?]),
         };
         let action = match rules {
-            Some(rules) => rules.apply(&context.rule_context)?,
-            None => RuleAction::Allow
+            Some(rules) => rules.apply(rule_ctx)?,
+            None => RuleAction::Allow,
         };
         if action == RuleAction::Allow {
             match value {
-                RuledArgumentValue::Single(s) => Ok(vec![resolve_value(s.as_str(), context)?]),
+                RuledArgumentValue::Single(s) => Ok(vec![var_resolver.resolve(s)?]),
                 RuledArgumentValue::Multiple(v) => v
                     .iter()
-                    .map(|s| resolve_value(s.as_str(), context))
+                    .map(|s| {
+                        var_resolver
+                            .resolve(s.as_str())
+                            .map_err(ArgumentResolutionError::VariableNotFound)
+                    })
                     .collect(),
             }
         } else {
             Ok(vec![])
         }
     }
-}
-
-static VARIABLE_MATCHER: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"\$\{([a-zA-Z0-9_]+)\}").unwrap());
-
-fn resolve_value(value: &str, context: &ArgumentsContext) -> ArgumentResolutionResult<String> {
-    let mut new = String::with_capacity(value.len());
-    let mut last_match = 0;
-    for caps in VARIABLE_MATCHER.captures_iter(value) {
-        let m = caps.get(0).unwrap();
-        new.push_str(&value[last_match..m.start()]);
-        let var_name = &caps[1];
-        let replacement = context
-            .variables
-            .get(var_name)
-            .ok_or_else(|| ArgumentResolutionError::VariableNotFound(var_name.to_string()))?;
-        new.push_str(replacement);
-        last_match = m.end();
-    }
-    new.push_str(&value[last_match..]);
-    Ok(new)
 }
 
 #[derive(Debug)]
@@ -124,43 +94,51 @@ pub struct ResolvedArguments {
 impl Arguments {
     pub fn resolve_default_user_jvm(
         &self,
-        context: &ArgumentsContext,
+        rule_ctx: &RuleContext,
+        var_resolver: &VariableResolver,
     ) -> ArgumentResolutionResult<Vec<String>> {
         match &self.default_user_jvm {
-            Some(args) => resolve_args(args, context),
+            Some(args) => resolve_args(args, rule_ctx, var_resolver),
             None => Ok(vec![]),
         }
     }
 
     pub fn resolve(
         &self,
-        context: &ArgumentsContext,
+        rule_ctx: &RuleContext,
+        var_resolver: &VariableResolver,
     ) -> ArgumentResolutionResult<ResolvedArguments> {
         Ok(ResolvedArguments {
-            default_user_jvm: self.resolve_default_user_jvm(context)?,
-            game: self.resolve_game(context)?,
-            jvm: self.resolve_jvm(context)?,
+            default_user_jvm: self.resolve_default_user_jvm(rule_ctx, var_resolver)?,
+            game: self.resolve_game(rule_ctx, var_resolver)?,
+            jvm: self.resolve_jvm(rule_ctx, var_resolver)?,
         })
     }
 
     pub fn resolve_game(
         &self,
-        context: &ArgumentsContext,
+        rule_ctx: &RuleContext,
+        var_resolver: &VariableResolver,
     ) -> ArgumentResolutionResult<Vec<String>> {
-        resolve_args(&self.game, context)
+        resolve_args(&self.game, rule_ctx, var_resolver)
     }
 
-    pub fn resolve_jvm(&self, context: &ArgumentsContext) -> ArgumentResolutionResult<Vec<String>> {
-        resolve_args(&self.jvm, context)
+    pub fn resolve_jvm(
+        &self,
+        rule_ctx: &RuleContext,
+        var_resolver: &VariableResolver,
+    ) -> ArgumentResolutionResult<Vec<String>> {
+        resolve_args(&self.jvm, rule_ctx, var_resolver)
     }
 }
 
 fn resolve_args(
     args: &[Argument],
-    context: &ArgumentsContext,
+    rule_ctx: &RuleContext,
+    var_resolver: &VariableResolver,
 ) -> ArgumentResolutionResult<Vec<String>> {
     args.iter().try_fold(Vec::new(), |mut acc, arg| {
-        acc.extend(arg.resolve(context)?);
+        acc.extend(arg.resolve(rule_ctx, var_resolver)?);
         Ok(acc)
     })
 }
@@ -168,15 +146,20 @@ fn resolve_args(
 impl CompatibleArguments {
     pub fn resolve(
         &self,
-        context: &ArgumentsContext,
+        rule_ctx: &RuleContext,
+        var_resolver: &VariableResolver,
     ) -> ArgumentResolutionResult<ResolvedArguments> {
         let args = match self {
-            CompatibleArguments::Structured(args) => return args.resolve(context),
+            CompatibleArguments::Structured(args) => return args.resolve(rule_ctx, var_resolver),
             CompatibleArguments::Text(text) => text.as_str(),
         };
         let args = args
             .split_whitespace()
-            .map(|arg| resolve_value(arg, context))
+            .map(|arg| {
+                var_resolver
+                    .resolve(arg)
+                    .map_err(ArgumentResolutionError::VariableNotFound)
+            })
             .collect::<ArgumentResolutionResult<Vec<String>>>()?;
         Ok(ResolvedArguments {
             default_user_jvm: vec![],
