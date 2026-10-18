@@ -75,8 +75,6 @@ impl DownloadableFile for LibraryArtifact {
 
 #[derive(Debug, Error)]
 pub enum LibraryResolutionError {
-    #[error("Unsupported OS: {0:?}")]
-    UnsupportedOs(Os),
     #[error("Missing classifier for OS: {0:?}")]
     MissingClassifier(Option<String>),
     #[error("Rule evaluation error: {0}")]
@@ -141,7 +139,7 @@ impl Library {
             Os::Windows => "windows",
             Os::MacOS => "osx",
             Os::Linux => "linux",
-            _ => return Err(LibraryResolutionError::UnsupportedOs(rule_ctx.os)),
+            _ => return Ok(Some(artifacts)),
         };
         let Some(needed_classifier) = natives.get(os_name).map(String::as_str) else {
             return Ok(Some(artifacts));
