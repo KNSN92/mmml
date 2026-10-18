@@ -2,9 +2,11 @@ use std::collections::HashMap;
 
 use reqwest::IntoUrl;
 use serde::Deserialize;
-use thiserror::Error;
 
-use crate::{download::{DownloadableFile, DownloadableResource}, hash::ResourceHash};
+use crate::{
+    download::{DownloadableFile, DownloadableResource},
+    hash::ResourceHash,
+};
 
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
@@ -34,23 +36,6 @@ impl AssetIndex {
         self.objects.get(name)
     }
 }
-
-#[derive(Debug, Error)]
-pub enum AssetObjectError {
-    #[error("Content length mismatch: expected {expected} but got {actual:?}")]
-    ContentLengthMismatch { expected: u64, actual: u64 },
-    #[error("Hash mismatch: expected {expected} but got {actual}")]
-    HashMismatch {
-        expected: ResourceHash,
-        actual: ResourceHash,
-    },
-    #[error("Network error: {0}")]
-    NetworkError(#[from] reqwest::Error),
-    #[error("IO error: {0}")]
-    IOError(#[from] std::io::Error),
-}
-
-pub type AssetObjectResult<T> = Result<T, AssetObjectError>;
 
 impl DownloadableResource for AssetObject {
     fn url(&self) -> impl IntoUrl {
