@@ -1,4 +1,7 @@
-use std::{collections::HashMap, path::{Path, PathBuf}};
+use std::{
+    collections::HashMap,
+    path::{Path, PathBuf},
+};
 
 use platform::Os;
 use reqwest::IntoUrl;
@@ -6,7 +9,11 @@ use serde::Deserialize;
 use thiserror::Error;
 use url::Url;
 
-use crate::{download::{DownloadableFile, DownloadableResource}, hash::ResourceHash, version::rule::{RuleAction, RuleContext, RuleEvalError, RuleList}};
+use crate::{
+    download::{DownloadableFile, DownloadableResource},
+    hash::ResourceHash,
+    version::rule::{RuleAction, RuleContext, RuleEvalError, RuleList},
+};
 
 #[derive(Debug, Deserialize)]
 #[cfg_attr(feature = "debug", serde(deny_unknown_fields))]
@@ -65,8 +72,6 @@ impl DownloadableFile for LibraryArtifact {
     }
 }
 
-
-
 #[derive(Debug, Error)]
 pub enum LibraryResolutionError {
     #[error("Unsupported OS: {0:?}")]
@@ -79,30 +84,53 @@ pub enum LibraryResolutionError {
 
 pub type LibraryResolutionResult<T> = Result<T, LibraryResolutionError>;
 
+pub struct ResolvedLibrary<'a> {
+    pub name: &'a str,
+    pub url: Option<&'a Url>,
+    pub extract: Option<&'a LibraryExtract>,
+    pub artifact: Option<&'a LibraryArtifact>,
+    pub native: Option<&'a LibraryArtifact>,
+}
+
 impl Libraries {
-    pub fn resolve(&self, context: &RuleContext) -> LibraryResolutionResult<Vec<&LibraryArtifact>> {
-        let mut artifacts = Vec::new();
+    pub fn resolve(
+        &self,
+        context: &RuleContext,
+    ) -> LibraryResolutionResult<Vec<ResolvedLibrary<'_>>> {
+        let mut libraries = Vec::new();
         for library in &self.0 {
-            artifacts.extend(library.resolve(context)?);
+            let Some(resolved) = library.resolve(context)? else {
+                continue;
+            };
+            libraries.push(resolved);
         }
-        Ok(artifacts)
+        Ok(libraries)
     }
 }
 
 impl Library {
-    pub fn resolve(&self, context: &RuleContext) -> LibraryResolutionResult<Vec<&LibraryArtifact>> {
+    pub fn resolve(
+        &self,
+        context: &RuleContext,
+    ) -> LibraryResolutionResult<Option<ResolvedLibrary<'_>>> {
         let action = match &self.rules {
             Some(rules) => rules.apply(context)?,
             None => RuleAction::Allow,
         };
         if action == RuleAction::Disallow {
-            return Ok(Vec::new());
+            return Ok(None);
         }
 
-        let mut artifacts = Vec::new();
-        if let Some(artifact) = &self.downloads.artifact {
-            artifacts.push(artifact);
-        }
+        let mut artifacts = ResolvedLibrary {
+            name: &self.name,
+            url: self.url.as_ref(),
+            extract: self.extract.as_ref(),
+            artifact: self.downloads.artifact.as_ref(),
+            native: None,
+        };
+        let Some(natives) = &self.natives else {
+            return Ok(Some(artifacts));
+        };
 
         let os_name = match context.os {
             Os::Windows => "windows",
@@ -110,17 +138,21 @@ impl Library {
             Os::Linux => "linux",
             _ => return Err(LibraryResolutionError::UnsupportedOs(context.os)),
         };
-
-        let needed_classifier = self.natives.as_ref().and_then(|classifier| classifier.get(os_name));
-        match (needed_classifier, &self.downloads.classifiers) {
-            (Some(needed_classifier), Some(classifiers)) => match classifiers.get(needed_classifier) {
-                Some(artifact) => artifacts.push(artifact),
-                None => return Err(LibraryResolutionError::MissingClassifier(Some(needed_classifier.clone()))),
-            },
-            (Some(_), None) => return Err(LibraryResolutionError::MissingClassifier(None)),
-            _ => {}
+        let Some(needed_classifier) = natives.get(os_name).map(String::as_str) else {
+            return Ok(Some(artifacts));
+        };
+        let Some(classifiers) = &self.downloads.classifiers else {
+            return Err(LibraryResolutionError::MissingClassifier(None));
+        };
+        match classifiers.get(needed_classifier) {
+            Some(artifact) => artifacts.native = Some(artifact),
+            None => {
+                return Err(LibraryResolutionError::MissingClassifier(Some(
+                    needed_classifier.to_string(),
+                )));
+            }
         }
 
-        Ok(artifacts)
+        Ok(Some(artifacts))
     }
 }
